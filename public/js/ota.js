@@ -102,7 +102,7 @@ export class OtaClient {
 }
 
 function getApiUrl(path) {
-  const customBackend = localStorage.getItem('custom_backend_url') || '';
+  const customBackend = localStorage.getItem('custom_backend_url') || 'https://quydoho-github-io.vercel.app';
   if (customBackend) {
     const base = customBackend.replace(/\/+$/, '');
     const cleanPath = path.startsWith('/') ? path : '/' + path;
