@@ -141,13 +141,13 @@
     <div id="settings-view" class="connection-overlay hidden">
       <div class="connection-modal">
         <header class="header">
-          <h1>⚙️ Cài đặt</h1>
+          <h1 id="settings-title" style="cursor: pointer; user-select: none;">⚙️ Cài đặt</h1>
           <button id="close-settings-btn" class="btn-icon-only" title="Đóng">❌</button>
         </header>
         
         <div class="settings-content">
           <!-- API Configuration -->
-          <section class="settings-section">
+          <section class="settings-section" id="api-settings-section" style="display: none;">
             <h2>Cấu hình Groq API & Backend</h2>
             <p class="settings-desc">Cấu hình API Key và địa chỉ Backend proxy để lấy gợi ý hội thoại.</p>
             <div style="display: flex; flex-direction: column; gap: 10px;">

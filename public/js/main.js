@@ -1040,6 +1040,27 @@ class App {
     this.$.saveEmojiBtn.addEventListener('click', () => this._saveEmojiMapping());
     this.$.resetEmojiBtn.addEventListener('click', () => this._resetEmojiMapping());
 
+    // Triple click to toggle hidden API configuration
+    const settingsTitle = document.getElementById('settings-title');
+    const apiSettingsSection = document.getElementById('api-settings-section');
+    if (settingsTitle && apiSettingsSection) {
+      let clickCount = 0;
+      let lastClickTime = 0;
+      settingsTitle.addEventListener('click', () => {
+        const now = Date.now();
+        if (now - lastClickTime < 500) {
+          clickCount++;
+        } else {
+          clickCount = 1;
+        }
+        lastClickTime = now;
+        if (clickCount === 3) {
+          apiSettingsSection.style.display = apiSettingsSection.style.display === 'none' ? 'block' : 'none';
+          clickCount = 0;
+        }
+      });
+    }
+
     // Connection Manager
     this.$.connectionBtn?.addEventListener('click', () => this._toggleConnection());
     this.$.closeConnectionBtn?.addEventListener('click', () => this._toggleConnection());
