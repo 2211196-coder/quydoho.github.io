@@ -31,17 +31,25 @@ async function hmacSha256(key, message) {
 }
 
 export class DeviceManager {
-  constructor() {
+  constructor(profileId = 'default') {
+    this.profileId = profileId;
     this.data = null;
   }
 
+  get storageKey() {
+    return `xiaozhi_device_${this.profileId}`;
+  }
+
   /** Load or create device identity */
-  async init() {
-    const stored = localStorage.getItem(STORAGE_KEY);
+  async init(profileId) {
+    if (profileId) {
+      this.profileId = profileId;
+    }
+    const stored = localStorage.getItem(this.storageKey);
     if (stored) {
       try {
         this.data = JSON.parse(stored);
-        console.log('[Device] Loaded identity:', this.data.serial_number);
+        console.log(`[Device:${this.profileId}] Loaded identity:`, this.data.serial_number);
         return;
       } catch { /* corrupted, recreate */ }
     }
@@ -54,7 +62,7 @@ export class DeviceManager {
     const macHash = (await sha256(macClean)).substring(0, 8).toUpperCase();
     const serial_number = `SN-${macHash}-${macClean}`;
 
-    const hostname = 'xiaozhi-web';
+    const hostname = `xiaozhi-web-${this.profileId}`;
     const hmac_key = await sha256(`${hostname}||${mac}||${generateUUID()}`);
 
     this.data = {
@@ -69,39 +77,44 @@ export class DeviceManager {
     };
 
     this._save();
-    console.log('[Device] Created new identity:', serial_number);
+    console.log(`[Device:${this.profileId}] Created new identity:`, serial_number);
   }
 
   _save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+    localStorage.setItem(this.storageKey, JSON.stringify(this.data));
   }
 
-  get serialNumber() { return this.data.serial_number; }
-  get hmacKey() { return this.data.hmac_key; }
-  get deviceId() { return this.data.device_id; }
-  get clientId() { return this.data.client_id; }
-  get isActivated() { return this.data.activation_status; }
-  get websocketUrl() { return this.data.websocket_url; }
-  get websocketToken() { return this.data.websocket_token; }
+  get serialNumber() { return this.data?.serial_number; }
+  get hmacKey() { return this.data?.hmac_key; }
+  get deviceId() { return this.data?.device_id; }
+  get clientId() { return this.data?.client_id; }
+  get isActivated() { return this.data?.activation_status || false; }
+  get websocketUrl() { return this.data?.websocket_url; }
+  get websocketToken() { return this.data?.websocket_token; }
 
   setActivated(status) {
-    this.data.activation_status = status;
-    this._save();
+    if (this.data) {
+      this.data.activation_status = status;
+      this._save();
+    }
   }
 
   setWebSocketConfig(url, token) {
-    this.data.websocket_url = url;
-    this.data.websocket_token = token;
-    this._save();
+    if (this.data) {
+      this.data.websocket_url = url;
+      this.data.websocket_token = token;
+      this._save();
+    }
   }
 
   async generateHmac(challenge) {
+    if (!this.data) return '';
     return hmacSha256(this.data.hmac_key, challenge);
   }
 
   /** Reset identity (for debugging) */
   reset() {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(this.storageKey);
     this.data = null;
   }
 }

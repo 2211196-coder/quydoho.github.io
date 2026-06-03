@@ -4,6 +4,10 @@
   "private": true,
   "description": "XiaoZhi AI Voice Assistant — Web Client",
   "scripts": {
-    "dev": "npx serve public -l 3000"
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "http-proxy-middleware": "^4.0.0"
   }
 }

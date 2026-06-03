@@ -44,7 +44,8 @@ export class OtaClient {
       });
     } catch {
       console.log('[OTA] Direct request failed (CORS?), using proxy...');
-      response = await fetch('/api/ota', {
+      const apiUrl = getApiUrl('/api/ota');
+      response = await fetch(apiUrl, {
         method: 'POST', headers, body: JSON.stringify(payload),
       });
     }
@@ -90,7 +91,8 @@ export class OtaClient {
         method: 'POST', headers, body: JSON.stringify(payload),
       });
     } catch {
-      response = await fetch('/api/activate', {
+      const apiUrl = getApiUrl('/api/activate');
+      response = await fetch(apiUrl, {
         method: 'POST', headers, body: JSON.stringify(payload),
       });
     }
@@ -98,3 +100,14 @@ export class OtaClient {
     return { status: response.status, data: await response.json() };
   }
 }
+
+function getApiUrl(path) {
+  const customBackend = localStorage.getItem('custom_backend_url') || '';
+  if (customBackend) {
+    const base = customBackend.replace(/\/+$/, '');
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+    return base + cleanPath;
+  }
+  return path;
+}
+

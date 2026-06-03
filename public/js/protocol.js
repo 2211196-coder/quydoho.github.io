@@ -174,7 +174,16 @@ export class XiaozhiProtocol {
   close() {
     this._isClosing = true;
     this.connected = false;
-    if (this.ws) { try { this.ws.close(1000); } catch {} this.ws = null; }
+    if (this.ws) {
+      try {
+        this.ws.onopen = null;
+        this.ws.onmessage = null;
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.close(1000);
+      } catch {}
+      this.ws = null;
+    }
     this._isClosing = false;
   }
 
