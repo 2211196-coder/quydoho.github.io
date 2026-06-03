@@ -218,7 +218,11 @@ class App {
   async init() {
     // Load Groq Config from localStorage
     const savedApiKey = localStorage.getItem('groq_api_key') || '';
-    const savedModel = localStorage.getItem('groq_model') || 'llama-3.1-8b-instant';
+    let savedModel = localStorage.getItem('groq_model') || 'llama-3.1-8b-instant';
+    if (savedModel === 'mixtral-8x7b-32768') {
+      savedModel = 'llama-3.1-8b-instant';
+      localStorage.setItem('groq_model', 'llama-3.1-8b-instant');
+    }
     const savedBackendUrl = localStorage.getItem('custom_backend_url') || '';
     this.$.groqApiKeyInput.value = savedApiKey;
     this.$.groqModelInput.value = savedModel;
