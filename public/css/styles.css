@@ -1131,6 +1131,13 @@ body.light-theme .chat-translation {
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 1000;
 }
+
+body.light-theme .btn-connection::after {
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
 .btn-connection:hover::after {
   opacity: 1;
   transform: translateY(0);
@@ -1763,6 +1770,13 @@ body.theme-shopping .chatbot-horizontal-nav .chatbot-card.active { border-color:
   z-index: 9999;
   text-align: center;
   line-height: 1.4;
+}
+
+body.light-theme .chatbot-horizontal-nav .chatbot-card[data-tooltip]::after {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #1f2937;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
 .chatbot-horizontal-nav .chatbot-card:hover[data-tooltip]::after {
