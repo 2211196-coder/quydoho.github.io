@@ -48,7 +48,9 @@ app.use(
 
 const FALLBACK_MODELS = [
   'llama-3.3-70b-versatile',
-  'llama-3.1-8b-instant'
+  'llama-3.1-8b-instant',
+  'llama3-8b-8192',
+  'llama3-70b-8192'
 ];
 
 async function fetchGroqWithFallback(apiKey, initialModel, requestBodyBase) {
