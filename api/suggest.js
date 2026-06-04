@@ -10,7 +10,10 @@ export default async function handler(req, res) {
 
   const { messages, role, apiKey: clientApiKey, model: clientModel } = req.body;
   const apiKey = clientApiKey || process.env.GROQ_API_KEY || '';
-  const model = clientModel || process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  let model = clientModel || process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  if (model === 'mixtral-8x7b-32768') {
+    model = 'llama-3.1-8b-instant';
+  }
 
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'Messages array is required' });

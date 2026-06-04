@@ -96,7 +96,10 @@ async function fetchGroqWithFallback(apiKey, initialModel, requestBodyBase) {
 app.post('/api/suggest', async (req, res) => {
   const { messages, role, apiKey: clientApiKey, model: clientModel } = req.body;
   const apiKey = clientApiKey || process.env.GROQ_API_KEY || '';
-  const initialModel = clientModel || process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  let initialModel = clientModel || process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  if (initialModel === 'mixtral-8x7b-32768') {
+    initialModel = 'llama-3.1-8b-instant';
+  }
 
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'Messages array is required' });
@@ -150,7 +153,10 @@ Respond ONLY with a JSON object in this exact schema:
 app.post('/api/translate', async (req, res) => {
   const { text, direction, apiKey: clientApiKey, model: clientModel } = req.body;
   const apiKey = clientApiKey || process.env.GROQ_API_KEY || '';
-  const initialModel = clientModel || process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  let initialModel = clientModel || process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  if (initialModel === 'mixtral-8x7b-32768') {
+    initialModel = 'llama-3.1-8b-instant';
+  }
 
   if (!text) {
     return res.status(400).json({ error: 'Text is required' });
