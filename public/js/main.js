@@ -940,10 +940,10 @@ class App {
     let innerHTML = `<span class="chat-label">${label}:</span> <span class="chat-text">${text}</span>`;
     if (role === 'ai') {
        const safeText = text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-       innerHTML += `<div class="chat-actions" style="margin-top: 6px; text-align: right;">
-           <button class="btn-translate-inline" onclick="window.appInstance.translateInline(this, '${safeText}')" style="background: transparent; border: none; font-size: 0.85rem; color: #a5b4fc; cursor: pointer; padding: 0; opacity: 0.8;">Dịch sang tiếng Việt</button>
+       innerHTML += `<div class="chat-actions">
+           <button class="btn-translate-inline" onclick="window.appInstance.translateInline(this, '${safeText}')">Dịch sang tiếng Việt</button>
        </div>
-       <div class="chat-translation hidden" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.2); font-size: 0.95rem; color: #e2e8f0; font-style: italic;"></div>`;
+       <div class="chat-translation hidden"></div>`;
     }
     el.innerHTML = innerHTML;
     this.$.chatLog.appendChild(el);
