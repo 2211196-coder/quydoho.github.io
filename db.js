@@ -20,6 +20,40 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
 // Google Sheets config
 const GOOGLE_SHEET_SCRIPT_URL = process.env.GOOGLE_SHEET_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzAmQ2MvHHcAa3t1x9NE8VhvVkO5cJbIF1T0JqlvPmUZIq0Ai51KGr6uQnZMGggedKA/exec';
 
+/**
+ * Helper: Google Apps Script always returns 302 redirects on POST.
+ * Some Node.js runtimes (Vercel serverless) convert POST→GET on redirect,
+ * losing the request body and causing writes to silently fail.
+ * This helper manually follows the redirect chain.
+ */
+async function fetchGoogleSheet(action, payload) {
+  const body = payload !== undefined
+    ? JSON.stringify({ action, payload })
+    : JSON.stringify({ action });
+
+  // Step 1: POST with redirect:'manual' to capture the 302
+  const initialRes = await fetch(GOOGLE_SHEET_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body,
+    redirect: 'manual'
+  });
+
+  // Step 2: If redirected, follow the Location header with GET
+  if (initialRes.status >= 300 && initialRes.status < 400) {
+    const location = initialRes.headers.get('location');
+    if (location) {
+      const redirectRes = await fetch(location);
+      if (!redirectRes.ok) throw new Error(`Google Sheet redirect returned status ${redirectRes.status}`);
+      return redirectRes;
+    }
+  }
+
+  // If not redirected (unlikely for GAS), return directly
+  if (!initialRes.ok) throw new Error(`Google Sheet returned status ${initialRes.status}`);
+  return initialRes;
+}
+
 // Initialize local JSON files if DB_TYPE is json
 function initJsonFiles() {
   if (!fs.existsSync(USERS_FILE)) {
@@ -68,12 +102,7 @@ async function readUsers() {
       console.warn('[DB] GOOGLE_SHEET_SCRIPT_URL is not configured. Falling back to local users.');
     } else {
       try {
-        const res = await fetch(GOOGLE_SHEET_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'readUsers' })
-        });
-        if (!res.ok) throw new Error(`Google Sheet returned status ${res.status}`);
+        const res = await fetchGoogleSheet('readUsers');
         const data = await res.json();
         if (data && data.error) throw new Error(data.error);
         return data;
@@ -152,12 +181,7 @@ async function writeUsers(users) {
   if (DB_TYPE === 'sheets') {
     if (!GOOGLE_SHEET_SCRIPT_URL) return;
     try {
-      const res = await fetch(GOOGLE_SHEET_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'writeUsers', payload: users })
-      });
-      if (!res.ok) throw new Error(`Google Sheet returned status ${res.status}`);
+      await fetchGoogleSheet('writeUsers', users);
     } catch (err) {
       console.error('[DB] Error writing users to Google Sheets:', err.message);
     }
@@ -223,12 +247,7 @@ async function readConnections() {
       console.warn('[DB] GOOGLE_SHEET_SCRIPT_URL is not configured. Falling back to local connections.');
     } else {
       try {
-        const res = await fetch(GOOGLE_SHEET_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'readConnections' })
-        });
-        if (!res.ok) throw new Error(`Google Sheet returned status ${res.status}`);
+        const res = await fetchGoogleSheet('readConnections');
         const data = await res.json();
         if (data && data.error) throw new Error(data.error);
         return data;
@@ -310,12 +329,7 @@ async function writeConnections(connections) {
   if (DB_TYPE === 'sheets') {
     if (!GOOGLE_SHEET_SCRIPT_URL) return;
     try {
-      const res = await fetch(GOOGLE_SHEET_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'writeConnections', payload: connections })
-      });
-      if (!res.ok) throw new Error(`Google Sheet returned status ${res.status}`);
+      await fetchGoogleSheet('writeConnections', connections);
     } catch (err) {
       console.error('[DB] Error writing connections to Google Sheets:', err.message);
     }
@@ -384,12 +398,7 @@ async function readPools() {
       console.warn('[DB] GOOGLE_SHEET_SCRIPT_URL is not configured. Falling back to local pools.');
     } else {
       try {
-        const res = await fetch(GOOGLE_SHEET_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'readPools' })
-        });
-        if (!res.ok) throw new Error(`Google Sheet returned status ${res.status}`);
+        const res = await fetchGoogleSheet('readPools');
         const data = await res.json();
         if (data && data.error) throw new Error(data.error);
         return data;
@@ -473,12 +482,7 @@ async function writePools(pools) {
   if (DB_TYPE === 'sheets') {
     if (!GOOGLE_SHEET_SCRIPT_URL) return;
     try {
-      const res = await fetch(GOOGLE_SHEET_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'writePools', payload: pools })
-      });
-      if (!res.ok) throw new Error(`Google Sheet returned status ${res.status}`);
+      const res = await fetchGoogleSheet('writePools', pools);
       const data = await res.json().catch(() => ({}));
       if (data && data.error) throw new Error(data.error);
     } catch (err) {

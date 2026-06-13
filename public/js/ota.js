@@ -110,8 +110,8 @@ function getApiUrl(path) {
     return path;
   }
 
-  // Khi chạy trên Vercel hoặc tên miền riêng của bạn (quydoho.io.vn) → gọi trực tiếp (cùng origin)
-  if (hostname.includes('vercel.app') || hostname.includes('quydoho.io.vn')) {
+  // Khi chạy trên Vercel → gọi trực tiếp (cùng origin)
+  if (hostname.includes('vercel.app')) {
     return path;
   }
 
