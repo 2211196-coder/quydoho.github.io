@@ -1,10 +1,10 @@
 [
   {
-    "device_key": "teacher_1781347946410_19",
+    "device_key": "teacher_1781373476108_696",
     "chatbot_id": "teacher",
-    "mac_address": "35:3e:52:4d:5e:d7",
-    "serial_number": "SN-D6096F47-353e524d5ed7",
-    "hmac_key": "eb967ad5f8696f37bad2fb581c76b1998e9966136bcf96ee227a37a7b8b055af",
+    "mac_address": "d8:83:2c:ec:9a:70",
+    "serial_number": "SN-086753D6-d8832cec9a70",
+    "hmac_key": "2a5f3c785cf5c8314e865c3718ca6716bfc397c209cbc70abaf32688d6626737",
     "activated": false,
     "leased_to": "",
     "leased_at": 0
