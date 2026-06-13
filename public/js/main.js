@@ -28,10 +28,9 @@ window.fetch = async function (input, init) {
   try {
     const response = await originalFetch.apply(this, arguments);
     
-    // If response is not ok and content-type is text/html, it's likely a 404 HTML fallback page
-    const contentType = response.headers.get('content-type') || '';
-    if (!response.ok && contentType.includes('text/html') && !isVercelBackend) {
-      console.warn(`[API Fallback] HTTP ${response.status} with HTML response from ${url}. Retrying via Vercel backend...`);
+    // If response is not ok, automatically fallback to Vercel production backend
+    if (!response.ok && !isVercelBackend) {
+      console.warn(`[API Fallback] HTTP ${response.status} from ${url}. Retrying via Vercel backend...`);
       let path = '';
       if (url.startsWith('http')) {
         const urlObj = new URL(url);
