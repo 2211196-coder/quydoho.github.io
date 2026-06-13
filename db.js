@@ -18,7 +18,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
 
 // Google Sheets config
-const GOOGLE_SHEET_SCRIPT_URL = process.env.GOOGLE_SHEET_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzAmQ2MvHHcAa3t1x9NE8VhvVkO5cJbIF1T0JqlvPmUZIq0Ai51KGr6uQnZMGggedKA/exec';
+const GOOGLE_SHEET_SCRIPT_URL = process.env.GOOGLE_SHEET_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbx8O30SA93Z4KpS9m91M1UOPItsxMYvxJ6MD-08ynyIAW_sEfthmMaqV5GrgML4dXOy/exec';
 
 const https = require('https');
 
