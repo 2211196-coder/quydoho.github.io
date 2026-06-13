@@ -71,10 +71,10 @@ function writeUsers(doc, users) {
     sheet = doc.insertSheet('users');
   }
   sheet.clear();
-  sheet.appendRow(['Username', 'Password', 'Role', 'Score', 'ChatCount']);
+  var rows = [['Username', 'Password', 'Role', 'Score', 'ChatCount']];
   for (var i = 0; i < users.length; i++) {
     var u = users[i];
-    sheet.appendRow([
+    rows.push([
       u.username,
       u.password || '',
       u.role || 'user',
@@ -82,6 +82,7 @@ function writeUsers(doc, users) {
       u.chatCount || 0
     ]);
   }
+  sheet.getRange(1, 1, rows.length, 5).setValues(rows);
   return { success: true };
 }
 
@@ -114,18 +115,19 @@ function writeConnections(doc, conns) {
     sheet = doc.insertSheet('connections');
   }
   sheet.clear();
-  sheet.appendRow(['ConnKey', 'MacAddress', 'SerialNumber', 'HmacKey']);
+  var rows = [['ConnKey', 'MacAddress', 'SerialNumber', 'HmacKey']];
   var keys = Object.keys(conns);
   for (var i = 0; i < keys.length; i++) {
     var key = keys[i];
     var c = conns[key];
-    sheet.appendRow([
+    rows.push([
       key,
       c.mac_address || '',
       c.serial_number || '',
       c.hmac_key || ''
     ]);
   }
+  sheet.getRange(1, 1, rows.length, 4).setValues(rows);
   return { success: true };
 }
 
@@ -165,12 +167,12 @@ function writeDevices(doc, devices) {
     sheet = doc.insertSheet('devices');
   }
   sheet.clear();
-  sheet.appendRow(['ChatbotId', 'DeviceCode', 'MacAddress', 'SerialNumber', 'HmacKey', 'Activated']);
+  var rows = [['ChatbotId', 'DeviceCode', 'MacAddress', 'SerialNumber', 'HmacKey', 'Activated']];
   var keys = Object.keys(devices);
   for (var i = 0; i < keys.length; i++) {
     var botId = keys[i];
     var d = devices[botId];
-    sheet.appendRow([
+    rows.push([
       botId,
       d.device_code || '',
       d.mac_address || '',
@@ -179,6 +181,7 @@ function writeDevices(doc, devices) {
       d.activated || false
     ]);
   }
+  sheet.getRange(1, 1, rows.length, 6).setValues(rows);
   return { success: true };
 }
 
@@ -215,10 +218,10 @@ function writePools(doc, pools) {
     sheet = doc.insertSheet('pools');
   }
   sheet.clear();
-  sheet.appendRow(['DeviceKey', 'ChatbotId', 'MacAddress', 'SerialNumber', 'HmacKey', 'Activated', 'LeasedTo', 'LeasedAt']);
+  var rows = [['DeviceKey', 'ChatbotId', 'MacAddress', 'SerialNumber', 'HmacKey', 'Activated', 'LeasedTo', 'LeasedAt']];
   for (var i = 0; i < pools.length; i++) {
     var p = pools[i];
-    sheet.appendRow([
+    rows.push([
       p.device_key,
       p.chatbot_id || '',
       p.mac_address || '',
@@ -229,5 +232,6 @@ function writePools(doc, pools) {
       p.leased_at || 0
     ]);
   }
+  sheet.getRange(1, 1, rows.length, 8).setValues(rows);
   return { success: true };
 }

@@ -122,7 +122,7 @@ const CHATBOTS = {
     topicEn: 'Job Interview',
     topicVi: 'Phỏng vấn',
     emoji: '👩‍🏫',
-    greeting: 'Hi there! I am Ms. Hoa, your interviewer today. 💼 Let\'s practice a Job Interview. To begin, tell me, why do you want this job?'
+    greeting: 'Hi there! I am Anna, your interviewer today. 💼 Let\'s practice a Job Interview. To begin, tell me, why do you want this job?'
   },
   receptionist: {
     id: 'receptionist',
@@ -724,7 +724,7 @@ class App {
     };
     this.$.statusText.textContent = labels[newState] || newState;
     this.$.talkBtn.disabled = newState === STATE.CONNECTING;
-    this.$.stopBtn.disabled = newState === STATE.IDLE;
+    this.$.stopBtn.disabled = newState === STATE.IDLE || newState === STATE.CONNECTING;
     this.$.statusText.className = `status-text status-${newState}`;
   }
 
@@ -799,6 +799,7 @@ class App {
     }
 
     this._addChatUI('system', '✅ Đã kết nối!');
+    this._setState(STATE.IDLE);
 
     // Send strict role-bound topic context to AI after connection
     if (this.currentTopic) {

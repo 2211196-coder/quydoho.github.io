@@ -14,12 +14,14 @@ const PORT = process.env.PORT || 3000;
 
 const db = require('./db');
 
-// ─── IN-MEMORY CACHE (TTL 60s) ───
+// ─── IN-MEMORY CACHE (TTL 60s, Pools 5s) ───
 const cache = {
   users: { data: null, expiry: 0 },
-  connections: { data: null, expiry: 0 }
+  connections: { data: null, expiry: 0 },
+  pools: { data: null, expiry: 0 }
 };
 const CACHE_TTL = 60000;
+const POOLS_CACHE_TTL = 5000;
 
 async function readUsers() {
   if (cache.users.data && Date.now() < cache.users.expiry) return cache.users.data;
@@ -43,6 +45,18 @@ async function readConnections() {
 async function writeConnections(connections) {
   await db.writeConnections(connections);
   cache.connections = { data: connections, expiry: Date.now() + CACHE_TTL };
+}
+
+async function readPools() {
+  if (cache.pools.data && Date.now() < cache.pools.expiry) return cache.pools.data;
+  const pools = await db.readPools();
+  cache.pools = { data: pools, expiry: Date.now() + POOLS_CACHE_TTL };
+  return pools;
+}
+
+async function writePools(pools) {
+  await db.writePools(pools);
+  cache.pools = { data: pools, expiry: Date.now() + POOLS_CACHE_TTL };
 }
 
 
@@ -177,7 +191,7 @@ app.post('/api/pool/lease', async (req, res) => {
   }
 
   const user = username.toLowerCase();
-  const pools = await db.readPools();
+  const pools = await readPools();
   const now = Date.now();
 
   // 1. Kiểm tra xem học viên này đã có thiết bị nào đang thuê cho chatbot này chưa
@@ -186,7 +200,7 @@ app.post('/api/pool/lease', async (req, res) => {
   if (existingLease) {
     // Gia hạn thời gian thuê
     existingLease.leased_at = now;
-    await db.writePools(pools);
+    await writePools(pools);
     return res.json({ device: existingLease });
   }
 
@@ -211,7 +225,7 @@ app.post('/api/pool/lease', async (req, res) => {
   availableDevice.leased_to = user;
   availableDevice.leased_at = now;
 
-  await db.writePools(pools);
+  await writePools(pools);
 
   res.json({ device: availableDevice });
 });
@@ -224,7 +238,7 @@ app.post('/api/pool/release', async (req, res) => {
   }
 
   const user = username.toLowerCase();
-  const pools = await db.readPools();
+  const pools = await readPools();
 
   let device = pools.find(p => 
     p.chatbot_id === chatbotId && 
@@ -235,7 +249,7 @@ app.post('/api/pool/release', async (req, res) => {
   if (device) {
     device.leased_to = '';
     device.leased_at = 0;
-    await db.writePools(pools);
+    await writePools(pools);
     return res.json({ message: 'Giải phóng thiết bị thành công.' });
   }
 
@@ -250,7 +264,7 @@ app.post('/api/pool/heartbeat', async (req, res) => {
   }
 
   const user = username.toLowerCase();
-  const pools = await db.readPools();
+  const pools = await readPools();
   const now = Date.now();
 
   let device = pools.find(p => 
@@ -261,7 +275,7 @@ app.post('/api/pool/heartbeat', async (req, res) => {
 
   if (device) {
     device.leased_at = now;
-    await db.writePools(pools);
+    await writePools(pools);
     return res.json({ message: 'Cập nhật heartbeat thành công.', leased_at: now });
   }
 
@@ -270,7 +284,7 @@ app.post('/api/pool/heartbeat', async (req, res) => {
 
 // Admin lấy danh sách toàn bộ thiết bị trong pool
 app.get('/api/admin/pool/list', async (req, res) => {
-  const pools = await db.readPools();
+  const pools = await readPools();
   res.json(pools);
 });
 
@@ -281,7 +295,7 @@ app.post('/api/admin/pool/add', async (req, res) => {
     return res.status(400).json({ error: 'chatbotId là bắt buộc.' });
   }
 
-  const pools = await db.readPools();
+  const pools = await readPools();
 
   // Tạo thông tin thiết bị ngẫu nhiên
   const generateRandomMac = () => {
@@ -309,7 +323,7 @@ app.post('/api/admin/pool/add', async (req, res) => {
   };
 
   pools.push(newDevice);
-  await db.writePools(pools);
+  await writePools(pools);
 
   res.json(newDevice);
 });
@@ -321,7 +335,7 @@ app.post('/api/admin/pool/activate-success', async (req, res) => {
     return res.status(400).json({ error: 'device_key là bắt buộc.' });
   }
 
-  const pools = await db.readPools();
+  const pools = await readPools();
   let device = pools.find(p => p.device_key === device_key);
 
   if (!device) {
@@ -333,7 +347,7 @@ app.post('/api/admin/pool/activate-success', async (req, res) => {
   device.hmac_key = hmac_key || device.hmac_key;
   device.activated = true;
 
-  await db.writePools(pools);
+  await writePools(pools);
   res.json({ message: 'Kích hoạt thiết bị trong pool thành công.', device });
 });
 
@@ -345,7 +359,7 @@ app.post('/api/admin/pool/delete', async (req, res) => {
   }
 
   try {
-    let pools = await db.readPools();
+    let pools = await readPools();
     const initialLen = pools.length;
     pools = pools.filter(d => d.device_key !== device_key);
     
@@ -353,7 +367,7 @@ app.post('/api/admin/pool/delete', async (req, res) => {
       return res.status(404).json({ error: 'Không tìm thấy thiết bị để xóa.' });
     }
 
-    await db.writePools(pools);
+    await writePools(pools);
     res.json({ success: true, message: 'Đã xóa thiết bị khỏi pool.' });
   } catch (err) {
     console.error('[Pool Delete Error]:', err.message);
