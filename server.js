@@ -51,8 +51,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Cấu hình để parse JSON body
 app.use(express.json());
+app.use((req, res, next) => {
+  if (!req.body) req.body = {};
+  next();
+});
 
 // Logging middleware
 app.use((req, res, next) => {

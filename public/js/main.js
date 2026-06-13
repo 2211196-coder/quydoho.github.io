@@ -12,6 +12,56 @@ import { ActivationManager } from './activation.js';
 // ─── Configuration ───────────────────────────────
 const WS_PROXY_URL = 'wss://xiaozhi-ws-proxy.kdcdigibots.workers.dev/';
 
+// Intercept fetch to automatically fallback to Vercel production backend if the request returns non-JSON (like HTML 404) or fails.
+const originalFetch = window.fetch;
+window.fetch = async function (input, init) {
+  let url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input && input.url));
+  
+  const isApiRequest = url && (url.includes('/api/') || url.startsWith('api/'));
+  
+  if (!isApiRequest) {
+    return originalFetch.apply(this, arguments);
+  }
+
+  const isVercelBackend = url.includes('quydoho-github-io.vercel.app');
+
+  try {
+    const response = await originalFetch.apply(this, arguments);
+    
+    // If response is not ok and content-type is text/html, it's likely a 404 HTML fallback page
+    const contentType = response.headers.get('content-type') || '';
+    if (!response.ok && contentType.includes('text/html') && !isVercelBackend) {
+      console.warn(`[API Fallback] HTTP ${response.status} with HTML response from ${url}. Retrying via Vercel backend...`);
+      let path = '';
+      if (url.startsWith('http')) {
+        const urlObj = new URL(url);
+        path = urlObj.pathname + urlObj.search;
+      } else {
+        path = url.startsWith('/') ? url : '/' + url;
+      }
+      const fallbackUrl = 'https://quydoho-github-io.vercel.app' + path;
+      return originalFetch(fallbackUrl, init);
+    }
+    
+    return response;
+  } catch (err) {
+    // If network error and it's not already Vercel backend, retry using Vercel backend
+    if (!isVercelBackend) {
+      console.warn(`[API Fallback] Network error ${err.message} from ${url}. Retrying via Vercel backend...`);
+      let path = '';
+      if (url.startsWith('http')) {
+        const urlObj = new URL(url);
+        path = urlObj.pathname + urlObj.search;
+      } else {
+        path = url.startsWith('/') ? url : '/' + url;
+      }
+      const fallbackUrl = 'https://quydoho-github-io.vercel.app' + path;
+      return originalFetch(fallbackUrl, init);
+    }
+    throw err;
+  }
+};
+
 // Dynamic path resolver for static hosting deployments
 const mainScript = document.querySelector('script[src*="main.js"]');
 const mainScriptSrc = mainScript ? mainScript.getAttribute('src') : '';
