@@ -2576,15 +2576,22 @@ class App {
             }
           }
 
-          let credsHtml = '';
-          if (isActivated) {
-            credsHtml = `
-              <div style="font-size:0.75rem; color:var(--text-dim); margin-top:4px; display:grid; grid-template-columns: 1fr 1fr; gap:4px;">
-                <div>MAC: <code style="font-size:0.7rem;">${d.mac_address}</code></div>
-                <div>SN: <code style="font-size:0.7rem;">${d.serial_number}</code></div>
+          let credsHtml = `
+            <div style="font-size:0.75rem; color:var(--text-dim); margin-top:6px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:6px; display:flex; flex-direction:column; gap:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>MAC: <code style="font-size:0.7rem; color:var(--text-main); font-family:monospace;">${d.mac_address}</code></span>
+                <button class="btn-copy-sug" style="padding:1px 4px; font-size:0.65rem;" onclick="event.stopPropagation(); navigator.clipboard.writeText('${d.mac_address}'); window.appInstance.showToast('Đã sao chép MAC! 📋');" title="Sao chép MAC">📋</button>
               </div>
-            `;
-          }
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>SN: <code style="font-size:0.7rem; color:var(--text-main); font-family:monospace;">${d.serial_number}</code></span>
+                <button class="btn-copy-sug" style="padding:1px 4px; font-size:0.65rem;" onclick="event.stopPropagation(); navigator.clipboard.writeText('${d.serial_number}'); window.appInstance.showToast('Đã sao chép SN! 📋');" title="Sao chép SN">📋</button>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85%;">Key: <code style="font-size:0.65rem; color:var(--text-main); font-family:monospace;">${d.hmac_key}</code></span>
+                <button class="btn-copy-sug" style="padding:1px 4px; font-size:0.65rem;" onclick="event.stopPropagation(); navigator.clipboard.writeText('${d.hmac_key}'); window.appInstance.showToast('Đã sao chép HMAC Key! 📋');" title="Sao chép HMAC Key">📋</button>
+              </div>
+            </div>
+          `;
 
           let actionBtn = `
             <button class="btn-secondary" style="font-size:0.75rem; padding:4px 8px; ${isActivated ? 'opacity:0.6;' : ''}" onclick="window.appInstance._adminActivatePoolDevice('${d.chatbot_id}', '${d.device_key}')">
