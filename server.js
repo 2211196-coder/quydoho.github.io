@@ -66,6 +66,7 @@ app.use((req, res, next) => {
 // Logging middleware
 app.use((req, res, next) => {
   console.log(`[Request] ${req.method} ${req.url}`);
+  console.log('[Env Check] DB_TYPE:', process.env.DB_TYPE, 'GOOGLE_SHEET_SCRIPT_URL:', process.env.GOOGLE_SHEET_SCRIPT_URL);
   next();
 });
 
