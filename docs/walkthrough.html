@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tài Liệu Hướng Dẫn: Admin Dashboard Cải Tiến</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(22, 28, 45, 0.7);
+      --card-border: rgba(255, 255, 255, 0.06);
+      --accent: #3b82f6;
+      --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #818cf8 100%);
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --code-bg: #1e293b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', 'Inter', sans-serif;
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.12) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text);
+      line-height: 1.6;
+      padding-bottom: 60px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 6px 16px;
+      border-radius: 99px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #60a5fa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .badge::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background-color: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    h1 {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 40%, var(--text-dim) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-dim);
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .tabs {
+      display: flex;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      padding: 6px;
+      border-radius: 14px;
+      margin-bottom: 30px;
+      gap: 4px;
+      backdrop-filter: blur(10px);
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      padding: 12px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tab-btn.active {
+      color: var(--text);
+      background: var(--accent-gradient);
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 35px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 12px;
+      color: #ffffff;
+    }
+
+    p {
+      margin-bottom: 16px;
+      color: #cbd5e1;
+      font-size: 0.95rem;
+    }
+
+    .feature-list {
+      margin-left: 20px;
+      margin-bottom: 20px;
+      color: #cbd5e1;
+    }
+
+    .feature-list li {
+      margin-bottom: 8px;
+    }
+
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    .tag {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .tag-post {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin-top: 15px;
+      margin-bottom: 25px;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.5);
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background: rgba(255, 255, 255, 0.01);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">Hoàn thành</div>
+      <h1>Admin Dashboard Cải Tiến Toàn Diện</h1>
+      <p class="subtitle">Báo cáo cập nhật giao diện quản lý admin, cấp tài khoản hàng loạt, thống kê rank trực quan và quản lý Device Pool.</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(event, 'tab-accounts')">👤 Quản Lý Tài Khoản</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab-pool')">🏊 Bể Thiết Bị (Device Pool)</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab-stats')">📊 Thống Kê & Rank</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab-apis')">🔌 API Backend</button>
+    </div>
+
+    <!-- PANEL 1: QUẢN LÝ TÀI KHOẢN -->
+    <div id="tab-accounts" class="panel active">
+      <h2>👤 Tính Năng Quản Lý & Cấp Tài Khoản Mới</h2>
+      <p>Chúng tôi đã thiết kế lại toàn bộ tab Quản lý Tài khoản để giải quyết các hạn chế trước đây. Giờ đây bạn có thể thực hiện các thao tác nhanh chóng và quản lý hàng trăm học viên dễ dàng:</p>
+      
+      <ul class="feature-list">
+        <li><strong>Cấp tài khoản hàng loạt (Bulk creation):</strong> Nhập prefix, số thứ tự bắt đầu, số lượng tài khoản (tối đa 50 mỗi đợt) và mật khẩu chung. Hệ thống sẽ tự sinh các tài khoản dạng <code>hv01</code>, <code>hv02</code>...</li>
+        <li><strong>Tìm kiếm & Lọc Realtime:</strong> Lọc danh sách tài khoản ngay khi gõ tên người dùng. Không còn phải scroll danh sách dài.</li>
+        <li><strong>Chọn nhiều & Hành động hàng loạt (Bulk Actions):</strong> Chọn một hoặc nhiều tài khoản cùng lúc qua checkbox. Thanh menu nổi (Floating Bulk Actions Bar) sẽ trượt lên từ phía dưới cho phép:
+          <ul style="margin-left: 20px; margin-top: 5px;">
+            <li>Đổi mật khẩu cho toàn bộ tài khoản được chọn.</li>
+            <li>Xóa toàn bộ tài khoản được chọn chỉ với một cú click xác nhận.</li>
+          </ul>
+        </li>
+        <li><strong>Hiển thị Rank trực quan:</strong> Cột Rank mới hiển thị thứ hạng của học viên (Newbie, Bronze, Gold...) tương ứng với điểm số tích lũy của họ.</li>
+      </ul>
+    </div>
+
+    <!-- PANEL 2: DEVICE POOL -->
+    <div id="tab-pool" class="panel">
+      <h2>🏊 Thống Kê Bể Thiết Bị Realtime</h2>
+      <p>Device Pool giúp học viên kết nối chatbot ngay lập tức mà không cần nhập mã kích hoạt ESP32 thủ công. Giao diện quản lý pool được nâng cấp với các thành phần trực quan:</p>
+      
+      <ul class="feature-list">
+        <li><strong>Dashboard chỉ số:</strong> Thống kê trực tiếp 4 thông số: Tổng số thiết bị | Thiết bị đã kích hoạt | Thiết bị đang bận | Thiết bị rảnh.</li>
+        <li><strong>Thanh trạng thái Progress Bar:</strong> Mỗi Chatbot hiển thị tỷ lệ thiết bị rảnh/bận dưới dạng thanh tiến trình đầy màu sắc.</li>
+        <li><strong>Trạng thái chi tiết:</strong> Chỉ rõ thiết bị nào đang bận kết nối với học viên nào (hiển thị kèm username thuê).</li>
+      </ul>
+    </div>
+
+    <!-- PANEL 3: THỐNG KÊ & RANK -->
+    <div id="tab-stats" class="panel">
+      <h2>📊 Biểu Đồ Rank & Top Học Viên</h2>
+      <p>Trang Thống kê chung giờ đây không chỉ có các con số thô sơ, mà cung cấp các góc nhìn phân tích chi tiết về lớp học:</p>
+      
+      <ul class="feature-list">
+        <li><strong>Biểu đồ phân bố Rank (CSS Bar Chart):</strong> Biểu đồ thanh ngang tuyệt đẹp thể hiện số lượng học viên phân bố ở mỗi thứ hạng (Newbie, Bronze, Silver, Gold, Platinum, Diamond, Master, Grandmaster).</li>
+        <li><strong>Bảng xếp hạng Top 5 Học Viên:</strong> Vinh danh 5 học viên có thành tích xuất sắc nhất kèm số điểm và số lượt chat tích lũy.</li>
+        <li><strong>Chỉ số trung bình:</strong> Cập nhật liên tục tổng người dùng, tổng tin nhắn và điểm số trung bình toàn hệ thống.</li>
+      </ul>
+    </div>
+
+    <!-- PANEL 4: BACKEND APIS -->
+    <div id="tab-apis" class="panel">
+      <h2>🔌 Các API Mới Được Triển Khai</h2>
+      <p>Để hỗ trợ các tính năng hàng loạt trên frontend, các API Endpoint hiệu năng cao đã được bổ sung vào <code>server.js</code>:</p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>API Endpoint</th>
+              <th>Phương thức</th>
+              <th>Mô tả</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/api/admin/users/bulk</code></td>
+              <td><span class="tag tag-post">POST</span></td>
+              <td>Tạo danh sách tài khoản hàng loạt theo mẫu <code>prefix + số thứ tự</code>.</td>
+            </tr>
+            <tr>
+              <td><code>/api/admin/users/bulk-reset</code></td>
+              <td><span class="tag tag-post">POST</span></td>
+              <td>Thay đổi mật khẩu chung cho một mảng các <code>usernames</code> được chọn.</td>
+            </tr>
+            <tr>
+              <td><code>/api/admin/users/bulk-delete</code></td>
+              <td><span class="tag tag-post">POST</span></td>
+              <td>Xóa đồng thời nhiều tài khoản học viên trong danh sách.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Ví dụ payload tạo hàng loạt:</p>
+      <pre class="code-block">
+POST /api/admin/users/bulk
+{
+  "prefix": "hv",
+  "startNum": 1,
+  "count": 10,
+  "password": "matkhaucuachung"
+}
+      </pre>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(event, tabId) {
+      const tabs = document.querySelectorAll('.tab-btn');
+      const panels = document.querySelectorAll('.panel');
+
+      tabs.forEach(tab => tab.classList.remove('active'));
+      panels.forEach(panel => panel.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+  </script>
+</body>
+</html>

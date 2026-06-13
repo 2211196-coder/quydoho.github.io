@@ -1,50 +1,640 @@
 const express = require('express');
-const { createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path');
+
+process.env.GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Phục vụ các file tĩnh trong thư mục public
-app.use(express.static(path.join(__dirname, 'public')));
+const db = require('./db');
+
+// ─── IN-MEMORY CACHE (TTL 60s) ───
+const cache = {
+  users: { data: null, expiry: 0 },
+  connections: { data: null, expiry: 0 }
+};
+const CACHE_TTL = 60000;
+
+async function readUsers() {
+  if (cache.users.data && Date.now() < cache.users.expiry) return cache.users.data;
+  const users = await db.readUsers();
+  cache.users = { data: users, expiry: Date.now() + CACHE_TTL };
+  return users;
+}
+
+async function writeUsers(users) {
+  await db.writeUsers(users);
+  cache.users = { data: users, expiry: Date.now() + CACHE_TTL };
+}
+
+async function readConnections() {
+  if (cache.connections.data && Date.now() < cache.connections.expiry) return cache.connections.data;
+  const conns = await db.readConnections();
+  cache.connections = { data: conns, expiry: Date.now() + CACHE_TTL };
+  return conns;
+}
+
+async function writeConnections(connections) {
+  await db.writeConnections(connections);
+  cache.connections = { data: connections, expiry: Date.now() + CACHE_TTL };
+}
+
+
+// Cấu hình CORS middleware để tránh lỗi CORS khi truy cập từ nguồn khác hoặc localhost khác cổng
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Device-Id, Client-Id, Activation-Version');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Cấu hình để parse JSON body
 app.use(express.json());
 
-// Proxy cho API lấy config OTA
-app.use(
-  '/api/ota',
-  createProxyMiddleware({
-    target: 'https://api.tenclass.net',
-    changeOrigin: true,
-    pathRewrite: {
-      '^/api/ota': '/xiaozhi/ota/',
-    },
-    onProxyReq: (proxyReq, req, res) => {
-      // Bổ sung các header cần thiết (forward từ client)
-      if (req.headers['device-id']) proxyReq.setHeader('Device-Id', req.headers['device-id']);
-      if (req.headers['client-id']) proxyReq.setHeader('Client-Id', req.headers['client-id']);
-      if (req.headers['activation-version']) proxyReq.setHeader('Activation-Version', req.headers['activation-version']);
-    }
-  })
-);
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`[Request] ${req.method} ${req.url}`);
+  next();
+});
 
-// Proxy cho API kích hoạt (Activate)
-app.use(
-  '/api/activate',
-  createProxyMiddleware({
-    target: 'https://api.tenclass.net',
-    changeOrigin: true,
-    pathRewrite: {
-      '^/api/activate': '/xiaozhi/ota/activate',
-    },
-    onProxyReq: (proxyReq, req, res) => {
-      if (req.headers['device-id']) proxyReq.setHeader('Device-Id', req.headers['device-id']);
-      if (req.headers['client-id']) proxyReq.setHeader('Client-Id', req.headers['client-id']);
-      if (req.headers['activation-version']) proxyReq.setHeader('Activation-Version', req.headers['activation-version']);
+// Phục vụ các file tĩnh trong thư mục public
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ─── HỆ THỐNG ĐĂNG NHẬP & TÀI KHOẢN ───
+
+// Đăng nhập — trả kèm connections per-user để frontend đồng bộ ngay
+app.post('/api/auth/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Vui lòng điền tên đăng nhập và mật khẩu.' });
+  }
+
+  const users = await readUsers();
+  const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+
+  if (!user || user.password !== password) {
+    return res.status(401).json({ error: 'Sai tên đăng nhập hoặc mật khẩu.' });
+  }
+
+  // Lấy connections per-user (key: username_chatbotId)
+  const allConnections = await readConnections();
+  const userConns = {};
+  const prefix = username.toLowerCase() + '_';
+  Object.keys(allConnections).forEach(key => {
+    if (key.startsWith(prefix)) {
+      userConns[key] = allConnections[key];
     }
-  })
-);
+  });
+
+  res.json({
+    username: user.username,
+    role: user.role || 'user',
+    score: user.score || 0,
+    chatCount: user.chatCount || 0,
+    connections: userConns
+  });
+});
+
+// Lấy danh sách toàn bộ người dùng (cho trang Admin — không có password)
+app.get('/api/admin/users', async (req, res) => {
+  const users = await readUsers();
+  const safeUsers = users.map(u => ({
+    username: u.username,
+    role: u.role || 'user',
+    score: u.score || 0,
+    chatCount: u.chatCount || 0
+  }));
+  res.json(safeUsers);
+});
+
+// Lấy danh sách toàn bộ người dùng CÓ password (cho Admin xem/export)
+app.get('/api/admin/users/full', async (req, res) => {
+  const users = await readUsers();
+  res.json(users.map(u => ({
+    username: u.username,
+    password: u.password || '',
+    role: u.role || 'user',
+    score: u.score || 0,
+    chatCount: u.chatCount || 0
+  })));
+});
+
+// Reset mật khẩu người dùng (chỉ Admin)
+app.post('/api/admin/users/reset', async (req, res) => {
+  const { username, newPassword } = req.body;
+  if (!username || !newPassword) {
+    return res.status(400).json({ error: 'Username và newPassword là bắt buộc.' });
+  }
+
+  const users = await readUsers();
+  const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+  if (!user) {
+    return res.status(404).json({ error: 'Tài khoản không tồn tại.' });
+  }
+
+  user.password = newPassword;
+  await writeUsers(users);
+  res.json({ message: `Đã reset mật khẩu cho ${username} thành công.` });
+});
+
+// Xuất CSV danh sách tài khoản
+app.get('/api/admin/users/export', async (req, res) => {
+  const users = await readUsers();
+  const csvHeader = 'Username,Password,Role,Score,ChatCount\n';
+  const csvBody = users.map(u =>
+    `${u.username},${u.password || ''},${u.role || 'user'},${u.score || 0},${u.chatCount || 0}`
+  ).join('\n');
+  
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="nova_users.csv"');
+  res.send('\uFEFF' + csvHeader + csvBody);
+});
+
+
+
+// ─── DEVICE POOL MANAGEMENT API ───
+
+// Expiration threshold: 5 minutes (300,000 ms)
+const LEASE_EXPIRY_MS = 300000;
+
+// Học viên thuê thiết bị ảo
+app.post('/api/pool/lease', async (req, res) => {
+  const { username, chatbotId } = req.body;
+  if (!username || !chatbotId) {
+    return res.status(400).json({ error: 'Username và chatbotId là bắt buộc.' });
+  }
+
+  const user = username.toLowerCase();
+  const pools = await db.readPools();
+  const now = Date.now();
+
+  // 1. Kiểm tra xem học viên này đã có thiết bị nào đang thuê cho chatbot này chưa
+  // Điều này để tránh tình trạng cùng 1 học viên thuê nhiều thiết bị
+  let existingLease = pools.find(p => p.chatbot_id === chatbotId && p.leased_to === user && (now - (p.leased_at || 0) < LEASE_EXPIRY_MS));
+  if (existingLease) {
+    // Gia hạn thời gian thuê
+    existingLease.leased_at = now;
+    await db.writePools(pools);
+    return res.json({ device: existingLease });
+  }
+
+  // 2. Tìm thiết bị rảnh trong pool của chatbotId này
+  // Thiết bị rảnh: activated === true VÀ (leased_to rỗng HOẶC đã hết hạn LEASE_EXPIRY_MS)
+  let availableDevice = pools.find(p => 
+    p.chatbot_id === chatbotId && 
+    p.activated === true && 
+    (!p.leased_to || (now - (p.leased_at || 0) >= LEASE_EXPIRY_MS))
+  );
+
+  if (!availableDevice) {
+    // Kiểm tra xem pool có thiết bị nào không
+    const hasAny = pools.some(p => p.chatbot_id === chatbotId);
+    if (!hasAny) {
+      return res.status(404).json({ error: 'empty', message: 'Hệ thống chưa được cấu hình thiết bị cho chatbot này. Vui lòng liên hệ Admin.' });
+    }
+    return res.status(409).json({ error: 'busy', message: 'Tất cả các kết nối cho chatbot này hiện đang bận. Vui lòng thử lại sau ít phút!' });
+  }
+
+  // 3. Tiến hành thuê thiết bị
+  availableDevice.leased_to = user;
+  availableDevice.leased_at = now;
+
+  await db.writePools(pools);
+
+  res.json({ device: availableDevice });
+});
+
+// Học viên giải phóng thiết bị ảo
+app.post('/api/pool/release', async (req, res) => {
+  const { username, chatbotId, mac_address } = req.body;
+  if (!username || !chatbotId || !mac_address) {
+    return res.status(400).json({ error: 'Username, chatbotId và mac_address là bắt buộc.' });
+  }
+
+  const user = username.toLowerCase();
+  const pools = await db.readPools();
+
+  let device = pools.find(p => 
+    p.chatbot_id === chatbotId && 
+    p.mac_address === mac_address && 
+    p.leased_to === user
+  );
+
+  if (device) {
+    device.leased_to = '';
+    device.leased_at = 0;
+    await db.writePools(pools);
+    return res.json({ message: 'Giải phóng thiết bị thành công.' });
+  }
+
+  res.json({ message: 'Không tìm thấy thiết bị đang thuê tương ứng.' });
+});
+
+// Gửi nhịp tim (heartbeat) để duy trì phiên thuê
+app.post('/api/pool/heartbeat', async (req, res) => {
+  const { username, chatbotId, mac_address } = req.body;
+  if (!username || !chatbotId || !mac_address) {
+    return res.status(400).json({ error: 'Username, chatbotId và mac_address là bắt buộc.' });
+  }
+
+  const user = username.toLowerCase();
+  const pools = await db.readPools();
+  const now = Date.now();
+
+  let device = pools.find(p => 
+    p.chatbot_id === chatbotId && 
+    p.mac_address === mac_address && 
+    p.leased_to === user
+  );
+
+  if (device) {
+    device.leased_at = now;
+    await db.writePools(pools);
+    return res.json({ message: 'Cập nhật heartbeat thành công.', leased_at: now });
+  }
+
+  res.status(404).json({ error: 'lease_not_found', message: 'Không tìm thấy phiên thuê thiết bị tương ứng.' });
+});
+
+// Admin lấy danh sách toàn bộ thiết bị trong pool
+app.get('/api/admin/pool/list', async (req, res) => {
+  const pools = await db.readPools();
+  res.json(pools);
+});
+
+// Admin thêm thiết bị mới vào pool
+app.post('/api/admin/pool/add', async (req, res) => {
+  const { chatbotId } = req.body;
+  if (!chatbotId) {
+    return res.status(400).json({ error: 'chatbotId là bắt buộc.' });
+  }
+
+  const pools = await db.readPools();
+
+  // Tạo thông tin thiết bị ngẫu nhiên
+  const generateRandomMac = () => {
+    const hex = () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
+    return `${hex()}:${hex()}:${hex()}:${hex()}:${hex()}:${hex()}`;
+  };
+  const sha256 = (str) => require('crypto').createHash('sha256').update(str).digest('hex');
+
+  const mac = generateRandomMac();
+  const macClean = mac.replace(/:/g, '');
+  const macHash = sha256(macClean).substring(0, 8).toUpperCase();
+  const serialNumber = `SN-${macHash}-${macClean}`;
+  const deviceKey = `${chatbotId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  const hmacKey = sha256(`${deviceKey}||${mac}||${Math.random()}`);
+
+  const newDevice = {
+    device_key: deviceKey,
+    chatbot_id: chatbotId,
+    mac_address: mac,
+    serial_number: serialNumber,
+    hmac_key: hmacKey,
+    activated: false,
+    leased_to: '',
+    leased_at: 0
+  };
+
+  pools.push(newDevice);
+  await db.writePools(pools);
+
+  res.json(newDevice);
+});
+
+// Admin kích hoạt thành công (lưu trạng thái đã kích hoạt)
+app.post('/api/admin/pool/activate-success', async (req, res) => {
+  const { device_key, mac_address, serial_number, hmac_key } = req.body;
+  if (!device_key) {
+    return res.status(400).json({ error: 'device_key là bắt buộc.' });
+  }
+
+  const pools = await db.readPools();
+  let device = pools.find(p => p.device_key === device_key);
+
+  if (!device) {
+    return res.status(404).json({ error: 'Không tìm thấy thiết bị tương ứng trong pool.' });
+  }
+
+  device.mac_address = mac_address || device.mac_address;
+  device.serial_number = serial_number || device.serial_number;
+  device.hmac_key = hmac_key || device.hmac_key;
+  device.activated = true;
+
+  await db.writePools(pools);
+  res.json({ message: 'Kích hoạt thiết bị trong pool thành công.', device });
+});
+
+// Admin: Xóa thiết bị khỏi pool
+app.post('/api/admin/pool/delete', async (req, res) => {
+  const { device_key } = req.body;
+  if (!device_key) {
+    return res.status(400).json({ error: 'device_key là bắt buộc.' });
+  }
+
+  try {
+    let pools = await db.readPools();
+    const initialLen = pools.length;
+    pools = pools.filter(d => d.device_key !== device_key);
+    
+    if (pools.length === initialLen) {
+      return res.status(404).json({ error: 'Không tìm thấy thiết bị để xóa.' });
+    }
+
+    await db.writePools(pools);
+    res.json({ success: true, message: 'Đã xóa thiết bị khỏi pool.' });
+  } catch (err) {
+    console.error('[Pool Delete Error]:', err.message);
+    res.status(500).json({ error: 'Lỗi máy chủ khi xóa thiết bị.', details: err.message });
+  }
+});
+
+// Tạo tài khoản người dùng mới (chỉ Admin)
+app.post('/api/admin/users', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username và Password là bắt buộc.' });
+  }
+
+  const users = await readUsers();
+  const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+  if (exists) {
+    return res.status(400).json({ error: 'Tài khoản đã tồn tại.' });
+  }
+
+  const newUser = {
+    username,
+    password,
+    role: 'user',
+    score: 0,
+    chatCount: 0
+  };
+  users.push(newUser);
+  await writeUsers(users);
+
+  res.status(201).json({ message: 'Tạo tài khoản thành công.' });
+});
+
+// Xóa tài khoản (chỉ Admin)
+app.post('/api/admin/users/delete', async (req, res) => {
+  const { username } = req.body;
+  if (!username) {
+    return res.status(400).json({ error: 'Username là bắt buộc.' });
+  }
+  if (username.toLowerCase() === 'admin') {
+    return res.status(400).json({ error: 'Không thể xóa tài khoản admin mặc định.' });
+  }
+
+  let users = await readUsers();
+  const index = users.findIndex(u => u.username.toLowerCase() === username.toLowerCase());
+  if (index === -1) {
+    return res.status(404).json({ error: 'Tài khoản không tồn tại.' });
+  }
+
+  users.splice(index, 1);
+  await writeUsers(users);
+
+  res.json({ message: 'Xóa tài khoản thành công.' });
+});
+
+// Tạo tài khoản hàng loạt (chỉ Admin)
+app.post('/api/admin/users/bulk', async (req, res) => {
+  const { prefix, startNum, count, password } = req.body;
+  if (!prefix || !count || !password) {
+    return res.status(400).json({ error: 'Prefix, count và password là bắt buộc.' });
+  }
+
+  const numCount = Math.min(parseInt(count) || 0, 50); // Max 50 per batch
+  const start = parseInt(startNum) || 1;
+  if (numCount <= 0) {
+    return res.status(400).json({ error: 'Số lượng phải lớn hơn 0.' });
+  }
+
+  const users = await readUsers();
+  const created = [];
+  const skipped = [];
+
+  for (let i = 0; i < numCount; i++) {
+    const num = (start + i).toString().padStart(2, '0');
+    const username = `${prefix}${num}`;
+    const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+    if (exists) {
+      skipped.push(username);
+      continue;
+    }
+    users.push({ username, password, role: 'user', score: 0, chatCount: 0 });
+    created.push(username);
+  }
+
+  if (created.length > 0) {
+    await writeUsers(users);
+  }
+
+  res.status(201).json({
+    message: `Đã tạo ${created.length} tài khoản${skipped.length > 0 ? `, bỏ qua ${skipped.length} (đã tồn tại)` : ''}.`,
+    created,
+    skipped
+  });
+});
+
+// Reset mật khẩu hàng loạt (chỉ Admin)
+app.post('/api/admin/users/bulk-reset', async (req, res) => {
+  const { usernames, newPassword } = req.body;
+  if (!usernames || !Array.isArray(usernames) || !newPassword) {
+    return res.status(400).json({ error: 'Danh sách usernames và newPassword là bắt buộc.' });
+  }
+
+  const users = await readUsers();
+  let resetCount = 0;
+
+  usernames.forEach(uname => {
+    if (uname.toLowerCase() === 'admin') return;
+    const user = users.find(u => u.username.toLowerCase() === uname.toLowerCase());
+    if (user) {
+      user.password = newPassword;
+      resetCount++;
+    }
+  });
+
+  if (resetCount > 0) {
+    await writeUsers(users);
+  }
+
+  res.json({ message: `Đã reset mật khẩu cho ${resetCount} tài khoản.`, resetCount });
+});
+
+// Xóa tài khoản hàng loạt (chỉ Admin)
+app.post('/api/admin/users/bulk-delete', async (req, res) => {
+  const { usernames } = req.body;
+  if (!usernames || !Array.isArray(usernames)) {
+    return res.status(400).json({ error: 'Danh sách usernames là bắt buộc.' });
+  }
+
+  let users = await readUsers();
+  const toDelete = usernames.filter(u => u.toLowerCase() !== 'admin').map(u => u.toLowerCase());
+  const initialLen = users.length;
+  users = users.filter(u => !toDelete.includes(u.username.toLowerCase()));
+  const deletedCount = initialLen - users.length;
+
+  if (deletedCount > 0) {
+    await writeUsers(users);
+  }
+
+  res.json({ message: `Đã xóa ${deletedCount} tài khoản.`, deletedCount });
+});
+
+// Lấy danh sách cấu hình kết nối chatbot
+app.get('/api/admin/connections', async (req, res) => {
+  res.json(await readConnections());
+});
+
+// Cập nhật cấu hình kết nối chatbot
+app.post('/api/admin/connections', async (req, res) => {
+  const newConns = req.body;
+  if (!newConns || typeof newConns !== 'object') {
+    return res.status(400).json({ error: 'Dữ liệu kết nối không hợp lệ.' });
+  }
+
+  const connections = await readConnections();
+  Object.keys(newConns).forEach(key => {
+    connections[key] = {
+      mac_address: newConns[key].mac_address || '',
+      serial_number: newConns[key].serial_number || '',
+      hmac_key: newConns[key].hmac_key || ''
+    };
+  });
+
+  await writeConnections(connections);
+  res.json({ message: 'Cập nhật cấu hình kết nối thành công.', connections });
+});
+
+// Cập nhật cấu hình kết nối chatbot của người dùng (tự động sau khi kích hoạt thành công)
+app.post('/api/user/connection', async (req, res) => {
+  const { username, chatbotId, mac_address, serial_number, hmac_key } = req.body;
+  if (!username || !chatbotId) {
+    return res.status(400).json({ error: 'Username và chatbotId là bắt buộc.' });
+  }
+
+  const connections = await readConnections();
+  const connKey = `${username.toLowerCase()}_${chatbotId}`;
+  connections[connKey] = {
+    mac_address: mac_address || '',
+    serial_number: serial_number || '',
+    hmac_key: hmac_key || ''
+  };
+
+  await writeConnections(connections);
+  res.json({ message: 'Cập nhật cấu hình kết nối người dùng thành công.', connections });
+});
+
+// Cập nhật điểm và số tin nhắn hội thoại
+app.post('/api/user/score', async (req, res) => {
+  const { username, score, chatCount } = req.body;
+  if (!username) {
+    return res.status(400).json({ error: 'Username là bắt buộc.' });
+  }
+
+  const users = await readUsers();
+  const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+  if (!user) {
+    return res.status(404).json({ error: 'Người dùng không tồn tại.' });
+  }
+
+  user.score = Number(score) || 0;
+  user.chatCount = Number(chatCount) || 0;
+  await writeUsers(users);
+
+  res.json({ message: 'Cập nhật điểm thành công.', score: user.score, chatCount: user.chatCount });
+});
+
+// Lấy danh sách bảng xếp hạng (Leaderboard)
+app.get('/api/leaderboard', async (req, res) => {
+  const users = await readUsers();
+  const leaderboard = users
+    .filter(u => u.role !== 'admin')
+    .map(u => ({
+      username: u.username,
+      score: u.score || 0,
+      chatCount: u.chatCount || 0
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  res.json(leaderboard);
+});
+
+
+// Proxy cho API lấy config OTA (dùng fetch native để tránh lỗi ES Module trên Vercel)
+app.use('/api/ota', async (req, res) => {
+  const targetUrl = 'https://api.tenclass.net/xiaozhi/ota' + req.url;
+  
+  const headers = {
+    'Content-Type': req.headers['content-type'] || 'application/json'
+  };
+  if (req.headers['device-id']) headers['Device-Id'] = req.headers['device-id'];
+  if (req.headers['client-id']) headers['Client-Id'] = req.headers['client-id'];
+  if (req.headers['activation-version']) headers['Activation-Version'] = req.headers['activation-version'];
+  if (req.headers['authorization']) headers['Authorization'] = req.headers['authorization'];
+
+  try {
+    const fetchOpts = {
+      method: req.method,
+      headers
+    };
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      fetchOpts.body = typeof req.body === 'object' ? JSON.stringify(req.body) : req.body;
+    }
+
+    const remoteRes = await fetch(targetUrl, fetchOpts);
+    res.status(remoteRes.status);
+    
+    const contentType = remoteRes.headers.get('content-type');
+    if (contentType) res.setHeader('Content-Type', contentType);
+    
+    const buffer = await remoteRes.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error('[OTA Proxy Error]:', err.message);
+    res.status(502).json({ error: 'Failed to proxy OTA request', details: err.message });
+  }
+});
+
+// Proxy cho API kích hoạt (dùng fetch native để tránh lỗi ES Module trên Vercel)
+app.all('/api/activate', async (req, res) => {
+  const targetUrl = 'https://api.tenclass.net/xiaozhi/ota/activate';
+  
+  const headers = {
+    'Content-Type': req.headers['content-type'] || 'application/json'
+  };
+  if (req.headers['device-id']) headers['Device-Id'] = req.headers['device-id'];
+  if (req.headers['client-id']) headers['Client-Id'] = req.headers['client-id'];
+  if (req.headers['activation-version']) headers['Activation-Version'] = req.headers['activation-version'];
+  if (req.headers['authorization']) headers['Authorization'] = req.headers['authorization'];
+
+  try {
+    const fetchOpts = {
+      method: req.method,
+      headers
+    };
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      fetchOpts.body = typeof req.body === 'object' ? JSON.stringify(req.body) : req.body;
+    }
+
+    const remoteRes = await fetch(targetUrl, fetchOpts);
+    res.status(remoteRes.status);
+    
+    const contentType = remoteRes.headers.get('content-type');
+    if (contentType) res.setHeader('Content-Type', contentType);
+    
+    const buffer = await remoteRes.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error('[Activate Proxy Error]:', err.message);
+    res.status(502).json({ error: 'Failed to proxy Activate request', details: err.message });
+  }
+});
 
 const FALLBACK_MODELS = [
   'llama-3.3-70b-versatile',
@@ -187,6 +777,10 @@ app.post('/api/translate', async (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-  console.log(`Server đang chạy tại http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server đang chạy tại http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

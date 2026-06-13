@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Nâng Cấp Hệ Thống Chatbot Nova</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0b0f;
+      --bg-card: rgba(20, 20, 25, 0.6);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-highlight: rgba(255, 255, 255, 0.15);
+      --text: #ffffff;
+      --text-dim: #9ca3af;
+      --accent: #8b5cf6;
+      --accent-hover: #9f75ff;
+      --accent-glow: rgba(139, 92, 246, 0.3);
+      --success: #10b981;
+      --radius: 20px;
+      --radius-sm: 12px;
+      --font: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --transition: 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font);
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 40%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+      padding: 40px 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    /* ─── Header ──────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+      position: relative;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      color: var(--accent-hover);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ffffff 30%, #a0aec0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-dim);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ─── Section Layout ──────────────────────── */
+    section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 35px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transition: var(--transition);
+    }
+
+    section:hover {
+      border-color: var(--border-highlight);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    /* ─── Grid Features ───────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 24px;
+      transition: var(--transition);
+    }
+
+    .feature-card:hover {
+      background: rgba(255, 255, 255, 0.04);
+      transform: translateY(-4px);
+      border-color: var(--accent);
+    }
+
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+
+    .feature-card h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    /* ─── Chatbot Grid ────────────────────────── */
+    .chatbot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .bot-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .bot-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 4px; height: 100%;
+      background: var(--bot-color, var(--accent));
+    }
+
+    .bot-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--bot-color, var(--accent));
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+
+    .bot-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .bot-avatar {
+      font-size: 1.8rem;
+      background: rgba(255, 255, 255, 0.04);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bot-title h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .bot-title .bot-badge {
+      font-size: 0.7rem;
+      color: var(--bot-color, var(--accent));
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .bot-detail {
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+    }
+
+    .bot-detail span {
+      color: var(--text-dim);
+    }
+
+    .bot-greeting {
+      font-size: 0.82rem;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-style: italic;
+      color: #e5e7eb;
+      line-height: 1.4;
+    }
+
+    /* ─── Guide Box ───────────────────────────── */
+    .guide-box {
+      background: rgba(139, 92, 246, 0.05);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .guide-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 16px;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .step-text h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .step-text p {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+    }
+
+    /* Code Block styling */
+    pre {
+      background: #050508;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.82rem;
+      color: #e5e7eb;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      line-height: 1.5;
+      margin-top: 12px;
+      position: relative;
+    }
+
+    pre::after {
+      content: 'COPYABLE SYSTEM PROMPT';
+      position: absolute;
+      top: 10px; right: 10px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(139, 92, 246, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* ─── Footer ──────────────────────────────── */
+    footer {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-top: 50px;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+    }
+
+    /* ─── Animations ──────────────────────────── */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      h1 { font-size: 2.2rem; }
+      section { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  
+  <!-- ─── HEADER ─── -->
+  <header>
+    <div class="badge">Nâng Cấp Hệ Thống Hoàn Tất</div>
+    <h1>Báo Cáo Kết Quả Nâng Cấp Nova</h1>
+    <p class="subtitle">Tổng hợp toàn diện các cải tiến về giao diện, tối ưu hóa khung chat chính, đồng bộ sáng tối và hồ sơ 6 chatbot độc bản.</p>
+  </header>
+
+  <!-- ─── TỔNG QUAN HẠNG MỤC NÂNG CẤP ─── -->
+  <section>
+    <h2>✨ Các Hạng Mục Đã Nâng Cấp</h2>
+    <div class="features-grid">
+      
+      <div class="feature-card">
+        <span class="feature-icon">☀️</span>
+        <h3>Giao diện Sáng/Tối Đồng Bộ</h3>
+        <p>Tích hợp công tắc bật sáng/tối đồng nhất mọi chi tiết: chatbot card, ô input, nút bấm và bảng cài đặt. Lưu lựa chọn trong bộ nhớ trình duyệt.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">💬</span>
+        <h3>Tối Ưu Không Gian Trò Chuyện</h3>
+        <p>Thu nhỏ khung hiển thị biểu cảm GIF từ 250px xuống 90px. Giải phóng 160px chiều cao cho khung chat chính giúp hiển thị nhiều tin nhắn hơn.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🎭</span>
+        <h3>Chủ Đề & Vai Trò Riêng Biệt</h3>
+        <p>Tự động thay đổi toàn bộ tông màu ứng dụng (nền, nút nói, bóng chat người dùng) tương thích 100% với từng chatbot được chọn.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📋</span>
+        <h3>Gợi Ý Phản Hồi Nổi Bật</h3>
+        <p>Thành phần gợi ý phản hồi được thiết kế lại bắt mắt với viền trái dày mang màu sắc của chatbot, đi kèm nút sao chép nhanh trực quan.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── HỒ SƠ 6 CHATBOT ĐỘC BẢN ─── -->
+  <section>
+    <h2>👥 Hồ Sơ 6 Nhân Vật Chatbot Mới</h2>
+    <p style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 24px;">Bồi bàn Alex đã được sa thải thành công. Dưới đây là danh sách 6 nhân vật chất lượng cao hỗ trợ luyện nói tiếng Anh tương tác:</p>
+    
+    <div class="chatbot-grid">
+      
+      <!-- Cô Hoa -->
+      <div class="bot-card" style="--bot-color: #8b5cf6;">
+        <div class="bot-header">
+          <span class="bot-avatar">👩‍🏫</span>
+          <div class="bot-title">
+            <h3>Cô Hoa</h3>
+            <span class="bot-badge">Teacher</span>
+          </div>
+        </div>
+        <div class="bot-detail">
+          <p><span>Chủ đề:</span> Phỏng vấn xin việc (Job Interview)</p>
+          <p><span>Giao diện:</span> Tím hoàng gia (Royal Purple)</p>
+        </div>
+        <div class="bot-greeting">
+          "Hi there! I am Ms. Hoa, your interviewer today. Let's practice a Job Interview. To begin, tell me, why do you want this job?"
+        </div>
+      </div>
+
+      <!-- Linda -->
+      <div class="bot-card" style="--bot-color: #10b981;">
+        <div class="bot-header">
+          <span class="bot-avatar">💸</span>
+          <div class="bot-title">
+            <h3>Linda</h3>
+            <span class="bot-badge">Cashier</span>
+          </div>
+        </div>
+        <div class="bot-detail">
+          <p><span>Chủ đề:</span> Mua sắm & Thanh toán (Shopping)</p>
+          <p><span>Giao diện:</span> Xanh ngọc lục bảo (Emerald Green)</p>
+        </div>
+        <div class="bot-greeting">
+          "Hello! Welcome to Nova Supermarket. Did you find everything you were looking for today?"
+        </div>
+      </div>
+
+      <!-- Sophia -->
+      <div class="bot-card" style="--bot-color: #f59e0b;">
+        <div class="bot-header">
+          <span class="bot-avatar">🏨</span>
+          <div class="bot-title">
+            <h3>Sophia</h3>
+            <span class="bot-badge">Receptionist</span>
+          </div>
+        </div>
+        <div class="bot-detail">
+          <p><span>Chủ đề:</span> Đặt phòng & Check-in (Hotel Check-in)</p>
+          <p><span>Giao diện:</span> Vàng hổ phách (Amber Gold)</p>
+        </div>
+        <div class="bot-greeting">
+          "Welcome to Grand Plaza Hotel! I am Sophia, the receptionist. How can I help you with your booking or checking in today?"
+        </div>
+      </div>
+
+      <!-- David -->
+      <div class="bot-card" style="--bot-color: #06b6d4;">
+        <div class="bot-header">
+          <span class="bot-avatar">✈️</span>
+          <div class="bot-title">
+            <h3>David</h3>
+            <span class="bot-badge">Airport Staff</span>
+          </div>
+        </div>
+        <div class="bot-detail">
+          <p><span>Chủ đề:</span> Dịch vụ sân bay (Airport Service)</p>
+          <p><span>Giao diện:</span> Xanh da trời Cyan (Sky Blue)</p>
+        </div>
+        <div class="bot-greeting">
+          "Hello! Welcome to Nova Airlines check-in counter. Can I please see your passport and flight ticket?"
+        </div>
+      </div>
+
+      <!-- Jack -->
+      <div class="bot-card" style="--bot-color: #ef4444;">
+        <div class="bot-header">
+          <span class="bot-avatar">🗺️</span>
+          <div class="bot-title">
+            <h3>Jack</h3>
+            <span class="bot-badge">Local Guide</span>
+          </div>
+        </div>
+        <div class="bot-detail">
+          <p><span>Chủ đề:</span> Hỏi & Chỉ đường (Asking Directions)</p>
+          <p><span>Giao diện:</span> Đỏ san hô (Crimson Red)</p>
+        </div>
+        <div class="bot-greeting">
+          "Excuse me! Are you lost? I can help you find your way around this beautiful city. Where are you trying to go?"
+        </div>
+      </div>
+
+      <!-- Emily -->
+      <div class="bot-card" style="--bot-color: #ec4899;">
+        <div class="bot-header">
+          <span class="bot-avatar">👗</span>
+          <div class="bot-title">
+            <h3>Emily</h3>
+            <span class="bot-badge">Shopping Assistant</span>
+          </div>
+        </div>
+        <div class="bot-detail">
+          <p><span>Chủ đề:</span> Mua sắm quần áo (Clothing Shopping)</p>
+          <p><span>Giao diện:</span> Hồng cánh sen (Rose Pink)</p>
+        </div>
+        <div class="bot-greeting">
+          "Hello! Welcome to TrendStyle Boutique. I am Emily, your shopping assistant today. Are you looking for anything specific, or just browsing?"
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── HƯỚNG DẪN CẤU HÌNH CONSOLE ─── -->
+  <section>
+    <h2>⚙️ Hướng Dẫn Cấu Hình Hệ Thống XiaoZhi Console</h2>
+    <div class="guide-box">
+      <p style="font-size: 0.95rem; margin-bottom: 16px;">Để đảm bảo <strong>ràng buộc vai trò chuẩn tuyệt đối 100%</strong> (AI từ chối trả lời các nội dung ngoài lề như "DNA là gì"), bạn cần cấu hình lời nhắc hệ thống trực tiếp trên nền tảng máy chủ.</p>
+      
+      <div class="guide-steps">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <h4>Đăng nhập hệ thống</h4>
+            <p>Truy cập vào trang quản lý chính thức tại địa chỉ <a href="https://xiaozhi.me" target="_blank" style="color: var(--accent-hover); text-decoration: none; font-weight: 500;">https://xiaozhi.me</a> và đăng nhập tài khoản của bạn.</p>
+          </div>
+        </div>
+        
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <h4>Chọn cấu hình thiết bị</h4>
+            <p>Vào mục <strong>Thiết bị của tôi (My Devices)</strong>, chọn thiết bị tương ứng với chatbot bạn đang chạy (mã MAC/UUID được hiển thị ở mục thông tin Debug trên giao diện Web).</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <h4>Cài đặt System Prompt</h4>
+            <p>Tìm trường cấu hình <strong>System Prompt / Lời nhắc hệ thống (LLM)</strong> và thiết lập luật nghiêm ngặt theo mẫu dưới đây để ép chatbot từ chối các câu hỏi ngoài lề:</p>
+          </div>
+        </div>
+      </div>
+
+      <pre>You are Ms. Hoa (or Sophia/Linda/David/Jack/Emily depending on the selected bot), a professional English roleplay assistant. 
+
+STRICT RULES:
+1. You MUST speak only in English. (Except when translating a specific phrase if explicitly requested).
+2. You ONLY discuss topics and questions related to your specific role and scenario.
+3. CRITICAL RULE: If the user asks ANY questions outside of your current scenario (e.g., asking "What is DNA?", "What is the weather?", or asking you to solve math/coding problems), you MUST politely refuse and redirect them back to the scenario immediately.
+
+Example Refusal:
+"I am sorry, but as your English interviewer today, I can only discuss job interview topics with you. Let's get back to our practice: Tell me about your background."</pre>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ─── -->
+  <footer>
+    <p>Báo Cáo Hoàn Thành - Hệ Thống Nova XiaoZhi Web Client</p>
+    <p style="font-size: 0.75rem; margin-top: 6px; color: var(--border-highlight);">Đã cập nhật đầy đủ mã nguồn HTML, CSS và JS</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

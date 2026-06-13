@@ -102,12 +102,23 @@ export class OtaClient {
 }
 
 function getApiUrl(path) {
-  const customBackend = localStorage.getItem('custom_backend_url') || 'https://quydoho-github-io.vercel.app';
-  if (customBackend) {
-    const base = customBackend.replace(/\/+$/, '');
-    const cleanPath = path.startsWith('/') ? path : '/' + path;
-    return base + cleanPath;
+  let customBackend = localStorage.getItem('custom_backend_url');
+  const hostname = window.location.hostname;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname.startsWith('192.168.');
+  
+  if (isLocal && (!customBackend || customBackend.includes('quydoho-github-io.vercel.app'))) {
+    return path;
   }
-  return path;
-}
 
+  // Khi chạy trên Vercel hoặc tên miền riêng của bạn (quydoho.io.vn) → gọi trực tiếp (cùng origin)
+  if (hostname.includes('vercel.app') || hostname.includes('quydoho.io.vn')) {
+    return path;
+  }
+
+  if (!customBackend) {
+    customBackend = 'https://quydoho-github-io.vercel.app';
+  }
+  const base = customBackend.replace(/\/+$/, '');
+  const cleanPath = path.startsWith('/') ? path : '/' + path;
+  return base + cleanPath;
+}

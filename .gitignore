@@ -4,3 +4,7 @@ node_modules/
 knowledge/
 package-lock.json
 .gemini/
+
+.vercel
+.env*
+scratch/

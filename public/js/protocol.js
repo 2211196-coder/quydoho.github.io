@@ -87,12 +87,32 @@ export class XiaozhiProtocol {
 
         this.ws.onopen = () => {
           console.log('[WS] Connected, sending hello...');
-          this._sendHello();
-          helloTimeout = setTimeout(() => {
-            console.error('[WS] Hello timeout');
-            finish(false);
-            try { this.ws.close(); } catch {}
-          }, 10000);
+          const sendHelloSafe = () => {
+            if (!this.ws) {
+              finish(false);
+              return;
+            }
+            if (this.ws.readyState === WebSocket.OPEN) {
+              try {
+                this._sendHello();
+                helloTimeout = setTimeout(() => {
+                  console.error('[WS] Hello timeout');
+                  finish(false);
+                  try { this.ws.close(); } catch {}
+                }, 10000);
+              } catch (err) {
+                console.error('[WS] Error sending hello:', err);
+                finish(false);
+              }
+            } else if (this.ws.readyState === WebSocket.CONNECTING) {
+              console.log('[WS] Socket still connecting, retrying in 50ms...');
+              setTimeout(sendHelloSafe, 50);
+            } else {
+              console.error('[WS] Socket in invalid state:', this.ws.readyState);
+              finish(false);
+            }
+          };
+          sendHelloSafe();
         };
 
         this.ws.onmessage = (event) => {

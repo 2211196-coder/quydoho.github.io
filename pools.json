@@ -1,0 +1,12 @@
+[
+  {
+    "device_key": "teacher_1781347946410_19",
+    "chatbot_id": "teacher",
+    "mac_address": "35:3e:52:4d:5e:d7",
+    "serial_number": "SN-D6096F47-353e524d5ed7",
+    "hmac_key": "eb967ad5f8696f37bad2fb581c76b1998e9966136bcf96ee227a37a7b8b055af",
+    "activated": false,
+    "leased_to": "",
+    "leased_at": 0
+  }
+]

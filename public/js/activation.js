@@ -81,9 +81,24 @@ export class ActivationManager {
 
   cancel() {
     this._cancelled = true;
+    if (this._sleepTimeout) {
+      clearTimeout(this._sleepTimeout);
+      this._sleepTimeout = null;
+    }
+    if (this._sleepResolve) {
+      this._sleepResolve();
+      this._sleepResolve = null;
+    }
   }
 
   _sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => {
+      this._sleepResolve = resolve;
+      this._sleepTimeout = setTimeout(() => {
+        this._sleepTimeout = null;
+        this._sleepResolve = null;
+        resolve();
+      }, ms);
+    });
   }
 }

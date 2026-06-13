@@ -1,0 +1,37 @@
+{
+  "admin": {
+    "mac_address": "00:11:22:33:44:55",
+    "serial_number": "SN-ADMIN-TEST",
+    "hmac_key": "admin-hmac-key"
+  },
+  "teacher": {
+    "mac_address": "",
+    "serial_number": "",
+    "hmac_key": ""
+  },
+  "cashier": {
+    "mac_address": "",
+    "serial_number": "",
+    "hmac_key": ""
+  },
+  "receptionist": {
+    "mac_address": "",
+    "serial_number": "",
+    "hmac_key": ""
+  },
+  "airport": {
+    "mac_address": "",
+    "serial_number": "",
+    "hmac_key": ""
+  },
+  "guide": {
+    "mac_address": "",
+    "serial_number": "",
+    "hmac_key": ""
+  },
+  "shopping": {
+    "mac_address": "",
+    "serial_number": "",
+    "hmac_key": ""
+  }
+}
