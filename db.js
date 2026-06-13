@@ -20,38 +20,65 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
 // Google Sheets config
 const GOOGLE_SHEET_SCRIPT_URL = process.env.GOOGLE_SHEET_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzAmQ2MvHHcAa3t1x9NE8VhvVkO5cJbIF1T0JqlvPmUZIq0Ai51KGr6uQnZMGggedKA/exec';
 
+const https = require('https');
+
 /**
  * Helper: Google Apps Script always returns 302 redirects on POST.
- * Some Node.js runtimes (Vercel serverless) convert POST→GET on redirect,
- * losing the request body and causing writes to silently fail.
- * This helper manually follows the redirect chain.
+ * Node's global fetch() on Vercel sometimes has issues with redirect:manual and body loss.
+ * Using native https module ensures absolute compatibility across all runtimes.
  */
-async function fetchGoogleSheet(action, payload) {
-  const body = payload !== undefined
-    ? JSON.stringify({ action, payload })
-    : JSON.stringify({ action });
+function fetchGoogleSheet(action, payload) {
+  return new Promise((resolve, reject) => {
+    const body = payload !== undefined
+      ? JSON.stringify({ action, payload })
+      : JSON.stringify({ action });
 
-  // Step 1: POST with redirect:'manual' to capture the 302
-  const initialRes = await fetch(GOOGLE_SHEET_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body,
-    redirect: 'manual'
+    const urlObj = new URL(GOOGLE_SHEET_SCRIPT_URL);
+    const options = {
+      hostname: urlObj.hostname,
+      path: urlObj.pathname + urlObj.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain',
+        'Content-Length': Buffer.byteLength(body)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      // Handle redirect
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        https.get(res.headers.location, (res2) => {
+          let chunks = [];
+          res2.on('data', chunk => chunks.push(chunk));
+          res2.on('end', () => {
+            const data = Buffer.concat(chunks).toString('utf8');
+            resolve({
+              ok: res2.statusCode === 200,
+              status: res2.statusCode,
+              json: async () => JSON.parse(data),
+              text: async () => data
+            });
+          });
+        }).on('error', reject);
+      } else {
+        let chunks = [];
+        res.on('data', chunk => chunks.push(chunk));
+        res.on('end', () => {
+          const data = Buffer.concat(chunks).toString('utf8');
+          resolve({
+            ok: res.statusCode === 200,
+            status: res.statusCode,
+            json: async () => JSON.parse(data),
+            text: async () => data
+          });
+        });
+      }
+    });
+
+    req.on('error', reject);
+    req.write(body);
+    req.end();
   });
-
-  // Step 2: If redirected, follow the Location header with GET
-  if (initialRes.status >= 300 && initialRes.status < 400) {
-    const location = initialRes.headers.get('location');
-    if (location) {
-      const redirectRes = await fetch(location);
-      if (!redirectRes.ok) throw new Error(`Google Sheet redirect returned status ${redirectRes.status}`);
-      return redirectRes;
-    }
-  }
-
-  // If not redirected (unlikely for GAS), return directly
-  if (!initialRes.ok) throw new Error(`Google Sheet returned status ${initialRes.status}`);
-  return initialRes;
 }
 
 // Initialize local JSON files if DB_TYPE is json
