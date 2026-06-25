@@ -931,23 +931,18 @@ class App {
     this._stopHeartbeat();
 
     if (this.shouldReconnect) {
-      const maxAttempts = 3;
-      if (this.reconnectAttempts >= maxAttempts) {
-        console.warn('[App] Max reconnect attempts reached, stopping.');
-        this._addChatUI('system', `⚠️ Không thể kết nối ổn định sau ${maxAttempts} lần thử. Vui lòng:
-        1. Kiểm tra lại thông tin Thiết bị (MAC/SN/HMAC Key) trong mục Cài đặt.
-        2. Đảm bảo địa chỉ MAC này đã được kích hoạt & gán cấu hình tiếng Anh trên xiaozhi.me.
-        3. Nhấn "Lưu Cấu Hình Thiết Bị" để bắt đầu kết nối lại.`);
-        this.shouldReconnect = false;
-        this.reconnectAttempts = 0;
-        return;
+      this.reconnectAttempts++;
+      
+      if (this.reconnectAttempts === 4) {
+        this._addChatUI('system', '⚠️ Đã thử kết nối lại thất bại nhiều lần. Vui lòng kiểm tra lại cấu hình thiết bị trong Cài đặt hoặc kết nối mạng. Hệ thống vẫn đang tự động thử lại ở chế độ nền...');
       }
 
-      this.reconnectAttempts++;
-      // Exponential backoff: 3s, 6s, 12s
-      const delay = 3000 * Math.pow(2, this.reconnectAttempts - 1);
+      // Exponential backoff: 3s, 6s, 12s, then capped at 15s for subsequent attempts
+      const delay = this.reconnectAttempts <= 3 
+        ? 3000 * Math.pow(2, this.reconnectAttempts - 1)
+        : 15000;
       
-      console.log(`[App] Scheduling auto-reconnect in ${delay / 1000}s (Attempt ${this.reconnectAttempts}/${maxAttempts})`);
+      console.log(`[App] Scheduling auto-reconnect in ${delay / 1000}s (Attempt ${this.reconnectAttempts})`);
       
       if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = setTimeout(() => {
