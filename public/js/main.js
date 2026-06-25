@@ -1664,6 +1664,11 @@ class App {
         // Show Logout button
         if (this.$.logoutBtn) this.$.logoutBtn.classList.remove('hidden');
         
+        // Show action buttons
+        if (this.$.connectionBtn) this.$.connectionBtn.classList.remove('hidden');
+        if (this.$.themeBtn) this.$.themeBtn.classList.remove('hidden');
+        if (this.$.settingsBtn) this.$.settingsBtn.classList.remove('hidden');
+        
         // Check role
         if (this.currentUser.role === 'admin') {
           if (this.$.adminDashboardBtn) this.$.adminDashboardBtn.classList.remove('hidden');
@@ -1688,6 +1693,11 @@ class App {
       if (appLayout) appLayout.classList.add('hidden');
       if (this.$.landingView) this.$.landingView.classList.remove('hidden');
       
+      // Hide action buttons on Landing Page
+      if (this.$.connectionBtn) this.$.connectionBtn.classList.add('hidden');
+      if (this.$.themeBtn) this.$.themeBtn.classList.add('hidden');
+      if (this.$.settingsBtn) this.$.settingsBtn.classList.add('hidden');
+
       // Hide Login overlay by default on Landing Page
       if (this.$.loginOverlay) this.$.loginOverlay.classList.add('hidden');
       if (this.$.userProfileBadge) this.$.userProfileBadge.classList.add('hidden');
