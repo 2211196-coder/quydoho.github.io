@@ -52,6 +52,9 @@ export class AudioPipeline {
 
   async init() {
     this.playbackCtx = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
+    this.playbackAnalyser = this.playbackCtx.createAnalyser();
+    this.playbackAnalyser.fftSize = 256;
+    this.playbackAnalyser.connect(this.playbackCtx.destination);
 
     if (this._hasWebCodecs) {
       await this._initWebCodecs();
@@ -109,6 +112,7 @@ export class AudioPipeline {
       sampleRate: OUTPUT_SAMPLE_RATE,
       numberOfChannels: 1,
       description: opusHeader, // Required for correct sample rate
+      hash: 0
     });
   }
 
@@ -138,6 +142,10 @@ export class AudioPipeline {
       if (!this._captureSource) {
         this._captureSource = this.captureCtx.createMediaStreamSource(this.stream);
       }
+      if (!this.captureAnalyser) {
+        this.captureAnalyser = this.captureCtx.createAnalyser();
+        this.captureAnalyser.fftSize = 256;
+      }
       if (!this._captureProcessor) {
         this._captureProcessor = this.captureCtx.createScriptProcessor(4096, 1, 1);
         this._captureProcessor.onaudioprocess = (e) => {
@@ -146,7 +154,8 @@ export class AudioPipeline {
         };
       }
 
-      this._captureSource.connect(this._captureProcessor);
+      this._captureSource.connect(this.captureAnalyser);
+      this.captureAnalyser.connect(this._captureProcessor);
       this._captureProcessor.connect(this.captureCtx.destination);
       
       this.capturing = true;
@@ -167,6 +176,9 @@ export class AudioPipeline {
     // Disconnect nodes to stop processing audio
     if (this._captureSource) {
       try { this._captureSource.disconnect(); } catch (e) {}
+    }
+    if (this.captureAnalyser) {
+      try { this.captureAnalyser.disconnect(); } catch (e) {}
     }
     if (this._captureProcessor) {
       try { this._captureProcessor.disconnect(); } catch (e) {}
@@ -242,7 +254,7 @@ export class AudioPipeline {
 
     const source = this.playbackCtx.createBufferSource();
     source.buffer = buffer;
-    source.connect(this.playbackCtx.destination);
+    source.connect(this.playbackAnalyser);
 
     const now = this.playbackCtx.currentTime;
     const startTime = Math.max(now, this._nextPlayTime);
@@ -264,6 +276,28 @@ export class AudioPipeline {
         numberOfChannels: 1, description: opusHeader,
       });
     }
+  }
+
+  getCaptureVolume() {
+    if (!this.capturing || !this.captureAnalyser) return 0;
+    const dataArray = new Uint8Array(this.captureAnalyser.frequencyBinCount);
+    this.captureAnalyser.getByteFrequencyData(dataArray);
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      sum += dataArray[i];
+    }
+    return sum / dataArray.length; // returns a value 0 - 255
+  }
+
+  getPlaybackVolume() {
+    if (!this.playbackAnalyser || this.playbackCtx.state === 'suspended') return 0;
+    const dataArray = new Uint8Array(this.playbackAnalyser.frequencyBinCount);
+    this.playbackAnalyser.getByteFrequencyData(dataArray);
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      sum += dataArray[i];
+    }
+    return sum / dataArray.length; // returns a value 0 - 255
   }
 
   dispose() {
