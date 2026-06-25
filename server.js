@@ -115,6 +115,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   res.json({
     username: user.username,
+    displayName: user.displayName || user.username,
     role: user.role || 'user',
     score: user.score || 0,
     chatCount: user.chatCount || 0,
@@ -127,6 +128,7 @@ app.get('/api/admin/users', async (req, res) => {
   const users = await readUsers();
   const safeUsers = users.map(u => ({
     username: u.username,
+    displayName: u.displayName || u.username,
     role: u.role || 'user',
     score: u.score || 0,
     chatCount: u.chatCount || 0
@@ -140,10 +142,29 @@ app.get('/api/admin/users/full', async (req, res) => {
   res.json(users.map(u => ({
     username: u.username,
     password: u.password || '',
+    displayName: u.displayName || '',
     role: u.role || 'user',
     score: u.score || 0,
     chatCount: u.chatCount || 0
   })));
+});
+
+// Đổi tên hiển thị người dùng (chỉ Admin)
+app.post('/api/admin/users/rename', async (req, res) => {
+  const { username, displayName } = req.body;
+  if (!username) {
+    return res.status(400).json({ error: 'Thiếu username' });
+  }
+
+  let users = await readUsers();
+  const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+  if (!user) {
+    return res.status(404).json({ error: 'Không tìm thấy tài khoản.' });
+  }
+
+  user.displayName = displayName || '';
+  await writeUsers(users);
+  res.json({ message: `Đã cập nhật tên hiển thị cho ${username} thành công.` });
 });
 
 // Reset mật khẩu người dùng (chỉ Admin)
@@ -581,6 +602,7 @@ app.get('/api/leaderboard', async (req, res) => {
     .filter(u => u.role !== 'admin')
     .map(u => ({
       username: u.username,
+      displayName: u.displayName || u.username,
       score: u.score || 0,
       chatCount: u.chatCount || 0
     }))

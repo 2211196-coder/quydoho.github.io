@@ -495,7 +495,7 @@ class App {
 
     if (history && history.length > 0) {
       history.forEach(msg => {
-        this._addChatUI(msg.role, msg.text);
+        this._addChatUI(msg.role, msg.text, true);
       });
       // Fetch suggestions if last message was from AI
       const lastMsg = history[history.length - 1];
@@ -1042,10 +1042,17 @@ class App {
         
         const safeEn = randomSug.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         this.$.inlineSuggestionContent.innerHTML = `<span>${randomSug.en}</span> <br/> <span style="color: var(--text-dim); font-size: 0.9em;">- ${randomSug.vi}</span>`;
-        // Default to hidden
-        this.$.inlineSuggestionContent.classList.add('hidden');
-        this.$.reloadSuggestionBtn.classList.add('hidden');
-        this.$.toggleSuggestionBtn.textContent = '🔽';
+        // Restore visibility state
+        const isHidden = localStorage.getItem('suggestionHidden') === 'true';
+        if (isHidden) {
+          this.$.inlineSuggestionContent.classList.add('hidden');
+          this.$.reloadSuggestionBtn.classList.add('hidden');
+          this.$.toggleSuggestionBtn.textContent = '🔽';
+        } else {
+          this.$.inlineSuggestionContent.classList.remove('hidden');
+          this.$.reloadSuggestionBtn.classList.remove('hidden');
+          this.$.toggleSuggestionBtn.textContent = '🔼';
+        }
       } else {
         throw new Error("Dữ liệu gợi ý không đúng định dạng");
       }
@@ -1065,9 +1072,17 @@ class App {
       const safeEn = randomSug.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
       
       this.$.inlineSuggestionContent.innerHTML = `<span style="color: #f87171;" title="Lỗi API, dùng Offline">⚠️</span> <span>${randomSug.en}</span> <br/> <span style="color: var(--text-dim); font-size: 0.9em;">- ${randomSug.vi}</span>`;
-      this.$.inlineSuggestionContent.classList.add('hidden');
-      this.$.reloadSuggestionBtn.classList.add('hidden');
-      this.$.toggleSuggestionBtn.textContent = '🔽';
+      // Restore visibility state
+      const isHidden = localStorage.getItem('suggestionHidden') === 'true';
+      if (isHidden) {
+        this.$.inlineSuggestionContent.classList.add('hidden');
+        this.$.reloadSuggestionBtn.classList.add('hidden');
+        this.$.toggleSuggestionBtn.textContent = '🔽';
+      } else {
+        this.$.inlineSuggestionContent.classList.remove('hidden');
+        this.$.reloadSuggestionBtn.classList.remove('hidden');
+        this.$.toggleSuggestionBtn.textContent = '🔼';
+      }
     } else {
       this.$.inlineSuggestionContainer.classList.add('hidden');
     }
@@ -1201,7 +1216,8 @@ class App {
   _addChatUI(role, text) {
     const el = document.createElement('div');
     el.className = `chat-msg chat-${role}`;
-    const label = role === 'ai' ? (CHATBOTS[this.currentChatbotId]?.displayName || 'Blubla Speakup') : role === 'user' ? 'Bạn' : '⚙️';
+    const userDisplayName = (this.currentUser && this.currentUser.displayName) ? this.currentUser.displayName : 'Bạn';
+    const label = role === 'ai' ? (CHATBOTS[this.currentChatbotId]?.displayName || 'Blubla Speakup') : role === 'user' ? userDisplayName : '⚙️';
     
     let innerHTML = `<span class="chat-label">${label}:</span> <span class="chat-text">${text}</span>`;
     if (role === 'ai') {
@@ -1323,10 +1339,12 @@ class App {
         this.$.inlineSuggestionContent.classList.remove('hidden');
         this.$.reloadSuggestionBtn.classList.remove('hidden');
         this.$.toggleSuggestionBtn.textContent = '🔼';
+        localStorage.setItem('suggestionHidden', 'false');
       } else {
         this.$.inlineSuggestionContent.classList.add('hidden');
         this.$.reloadSuggestionBtn.classList.add('hidden');
         this.$.toggleSuggestionBtn.textContent = '🔽';
+        localStorage.setItem('suggestionHidden', 'true');
       }
     });
 
@@ -1615,7 +1633,7 @@ class App {
         // Show Profile badge
         if (this.$.userProfileBadge) {
           this.$.userProfileBadge.classList.remove('hidden');
-          this.$.profileUsername.textContent = this.currentUser.username;
+          this.$.profileUsername.textContent = this.currentUser.displayName || this.currentUser.username;
           this._updateProfileBadgeUI();
         }
         
@@ -1821,7 +1839,7 @@ class App {
       const userData = await response.json();
       // Lưu per-user connections từ login response
       this.userConnections = userData.connections || {};
-      const user = { username: userData.username, role: userData.role, score: userData.score || 0, chatCount: userData.chatCount || 0 };
+      const user = { username: userData.username, displayName: userData.displayName, role: userData.role, score: userData.score || 0, chatCount: userData.chatCount || 0 };
       localStorage.setItem('currentUser', JSON.stringify(user));
       this._showLoginError(null);
       this._checkLoginState();
@@ -1858,7 +1876,7 @@ class App {
 
       const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
       if (user && user.password === password) {
-        const loggedUser = { username: user.username, role: user.role || 'user', score: user.score || 0, chatCount: user.chatCount || 0 };
+        const loggedUser = { username: user.username, displayName: user.displayName, role: user.role || 'user', score: user.score || 0, chatCount: user.chatCount || 0 };
         this.userConnections = JSON.parse(localStorage.getItem('simulated_connections')) || {};
         localStorage.setItem('currentUser', JSON.stringify(loggedUser));
         this._showLoginError(null);
@@ -2161,6 +2179,7 @@ class App {
         <tr class="${isChecked ? 'row-selected' : ''}">
           ${checkboxCell}
           <td style="font-weight:600;">${u.username}</td>
+          <td>${u.displayName || ''} <button class="btn-icon-only" onclick="window.appInstance._adminRenameUser('${u.username}', '${(u.displayName || '').replace(/'/g, "\\'")}')" style="font-size: 0.8em;" title="Đổi tên hiển thị">✏️</button></td>
           <td>${passwordCell}</td>
           <td>${u.role}</td>
           <td>${rankBadge}</td>
@@ -2279,6 +2298,23 @@ class App {
     }
 
     this._renderAdminUsersTable(filtered);
+  }
+
+  async _adminRenameUser(username, currentDisplayName) {
+    const newName = prompt(`Nhập Tên hiển thị mới cho tài khoản "${username}":`, currentDisplayName);
+    if (newName === null) return; // Cancelled
+    
+    try {
+      const res = await fetch(getApiUrl('/api/admin/users/rename'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, displayName: newName.trim() })
+      });
+      if (!res.ok) throw new Error('Lỗi đổi tên hiển thị.');
+      this._fetchAdminData();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   async _adminCreateUser(username, password) {
