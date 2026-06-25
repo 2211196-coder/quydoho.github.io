@@ -2311,7 +2311,7 @@ class App {
         body: JSON.stringify({ username, displayName: newName.trim() })
       });
       if (!res.ok) throw new Error('Lỗi đổi tên hiển thị.');
-      this._fetchAdminData();
+      this._loadAdminUsers();
     } catch (err) {
       alert(err.message);
     }
