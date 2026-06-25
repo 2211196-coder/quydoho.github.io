@@ -563,10 +563,10 @@ class App {
         this.$.activationView.classList.add('hidden');
         this.$.mainView.classList.remove('hidden');
 
-        // Start heartbeat timer (every 2 minutes)
+        // Start heartbeat timer (every 30 seconds)
         this.poolHeartbeatTimer = setInterval(() => {
           this._sendPoolHeartbeat(chatbotId, d.mac_address);
-        }, 120000);
+        }, 30000);
 
         // Automatically connect
         setTimeout(() => this._ensureConnected(), 300);
@@ -772,13 +772,13 @@ class App {
 
   // ─── Protocol Actions ──────────────────────────
 
-  async _ensureConnected() {
+  async _ensureConnected(silent = false) {
     if (this.protocol.isOpen) return true;
 
     this.shouldReconnect = true;
     this._setState(STATE.CONNECTING);
 
-    this._addChatUI('system', 'Đang lấy cấu hình...');
+    if (!silent) this._addChatUI('system', 'Đang lấy cấu hình...');
     try {
       const otaData = await this.ota.fetchConfig();
       this._updateDebugInfo();
@@ -786,7 +786,7 @@ class App {
       // Check if the server requires activation (means unactivated MAC or revoked on xiaozhi.me)
       if (otaData && otaData.activation) {
         console.warn('[App] Device requires activation.');
-        this._addChatUI('system', '⚠️ Thiết bị này chưa được kích hoạt trên xiaozhi.me! Vui lòng báo Admin kích hoạt.');
+        if (!silent) this._addChatUI('system', '⚠️ Thiết bị này chưa được kích hoạt trên xiaozhi.me! Vui lòng báo Admin kích hoạt.');
         this.currentDevice.setActivated(false);
         this._setState(STATE.IDLE);
         this.shouldReconnect = false;
@@ -802,14 +802,14 @@ class App {
         return false;
       }
     } catch (err) {
-      this._addChatUI('system', `Lỗi OTA: ${err.message}`);
+      if (!silent) this._addChatUI('system', `Lỗi OTA: ${err.message}`);
     }
 
     const url = this.currentDevice.websocketUrl;
     const token = this.currentDevice.websocketToken;
 
     if (!url) {
-      this._addChatUI('system', '❌ Chưa có WebSocket URL. Vui lòng thử lại.');
+      if (!silent) this._addChatUI('system', '❌ Chưa có WebSocket URL. Vui lòng thử lại.');
       this._setState(STATE.IDLE);
       return false;
     }
@@ -817,22 +817,22 @@ class App {
     let ok = false;
 
     if (WS_PROXY_URL) {
-      this._addChatUI('system', 'Kết nối qua proxy...');
+      if (!silent) this._addChatUI('system', 'Kết nối qua proxy...');
       ok = await this.protocol.connectViaProxy(
         WS_PROXY_URL, url, token, this.currentDevice.deviceId, this.currentDevice.clientId
       );
     } else {
-      this._addChatUI('system', 'Kết nối trực tiếp (không có proxy)...');
+      if (!silent) this._addChatUI('system', 'Kết nối trực tiếp (không có proxy)...');
       ok = await this.protocol.connectDirect(url, token, this.currentDevice.deviceId, this.currentDevice.clientId);
     }
 
     if (!ok) {
-      this._addChatUI('system', '❌ Không kết nối được. Vui lòng thử lại.');
+      if (!silent) this._addChatUI('system', '❌ Không kết nối được. Vui lòng thử lại.');
       this._setState(STATE.IDLE);
       return false;
     }
 
-    this._addChatUI('system', '✅ Đã kết nối!');
+    if (!silent) this._addChatUI('system', '✅ Đã kết nối!');
     this._setState(STATE.IDLE);
 
     // Send strict role-bound topic context to AI after connection
@@ -908,8 +908,12 @@ class App {
 
   _onChannelOpened() {
     console.log('[App] Channel opened');
+    if (this.reconnectAttempts > 0) {
+      this._addChatUI('system', '🟢 Đã kết nối lại thành công!');
+    } else {
+      this._addChatUI('system', '🟢 Kênh audio đã mở');
+    }
     this.reconnectAttempts = 0; // Reset reconnect attempts on success
-    this._addChatUI('system', '🟢 Kênh audio đã mở');
     this._startHeartbeat();
   }
 
@@ -917,7 +921,13 @@ class App {
     console.log('[App] Channel closed');
     this.audio.stopCapture();
     this._setState(STATE.IDLE);
-    this._addChatUI('system', '🔴 Kết nối đã đóng');
+    
+    if (!this.shouldReconnect) {
+      this._addChatUI('system', '🔴 Kết nối đã đóng');
+    } else if (this.reconnectAttempts === 0) {
+      this._addChatUI('system', '⚠️ Mất kết nối. Đang tự động thử kết nối lại...');
+    }
+    
     this._stopHeartbeat();
 
     if (this.shouldReconnect) {
@@ -937,12 +947,12 @@ class App {
       // Exponential backoff: 3s, 6s, 12s
       const delay = 3000 * Math.pow(2, this.reconnectAttempts - 1);
       
-      this._addChatUI('system', `⏳ Thử kết nối lại tự động sau ${delay / 1000} giây... (Lần ${this.reconnectAttempts}/${maxAttempts})`);
+      console.log(`[App] Scheduling auto-reconnect in ${delay / 1000}s (Attempt ${this.reconnectAttempts}/${maxAttempts})`);
       
       if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = setTimeout(() => {
         if (this.shouldReconnect && !this.protocol.isOpen) {
-          this._ensureConnected();
+          this._ensureConnected(true);
         }
       }, delay);
     }
