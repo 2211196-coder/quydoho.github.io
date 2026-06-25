@@ -22,10 +22,12 @@ export class AudioVisualizer {
   resize() {
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.parentElement.getBoundingClientRect();
+    const width = rect.width || 120;
+    const height = rect.height || 34;
     
     // Scale for high DPI displays to prevent blurry canvas lines
-    this.canvas.width = rect.width * dpr;
-    this.canvas.height = Math.max(rect.height, 60) * dpr;
+    this.canvas.width = width * dpr;
+    this.canvas.height = height * dpr;
     
     this.canvas.style.width = '100%';
     this.canvas.style.height = '100%';

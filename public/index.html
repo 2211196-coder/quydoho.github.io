@@ -63,8 +63,12 @@
             <button id="mobile-menu-btn" class="btn-icon-only hidden-desktop" title="Danh sách Chatbot">☰</button>
           </div>
           <div class="header-right">
-            <!-- Hàng thông tin cần thiết hiển thị bên dưới -->
             <div class="header-info-row">
+              <!-- Audio Visualizer -->
+              <div id="visualizer-container" class="visualizer-container header-visualizer">
+                <canvas id="visualizer-canvas"></canvas>
+              </div>
+
               <!-- User Profile Section -->
               <div id="user-profile-badge" class="user-profile-badge hidden">
                 <div class="user-profile-row" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
@@ -160,11 +164,6 @@
 
         <!-- Chat Log -->
         <div id="chat-log" class="chat-log"></div>
-
-        <!-- Audio Visualizer -->
-        <div id="visualizer-container" class="visualizer-container">
-          <canvas id="visualizer-canvas"></canvas>
-        </div>
 
         <!-- Text Input -->
         <div class="input-row">

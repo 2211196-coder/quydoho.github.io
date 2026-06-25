@@ -3072,3 +3072,27 @@ body.light-theme .visualizer-container {
   transform: translateY(12px) scale(0.99);
   pointer-events: none;
 }
+
+/* Header Specific Visualizer Styles */
+.visualizer-container.header-visualizer {
+  width: 90px;
+  height: 32px;
+  margin: 0;
+  border-radius: var(--radius-pill, 9999px);
+  padding: 0;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.visualizer-container.header-visualizer::before {
+  display: none;
+}
+
+/* Light Theme Overrides for Header Visualizer */
+body.light-theme .visualizer-container.header-visualizer {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
