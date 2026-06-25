@@ -53,7 +53,108 @@
   <!-- Dummy sidebar to maintain JS compatibility -->
   <div id="chatbot-sidebar" style="display:none"></div>
 
-  <div class="app-layout">
+  <!-- Landing Page Welcome Interface -->
+  <div id="landing-view" class="landing-view hidden">
+    <!-- Hero Section -->
+    <header class="landing-hero">
+      <div class="hero-content">
+        <span class="hero-badge">✨ Học Tiếng Anh Phản Xạ Mới</span>
+        <h1 class="hero-title">Luyện Nói Tiếng Anh Điêu Luyện Cùng AI</h1>
+        <p class="hero-description">Phát triển phản xạ giao tiếp tự nhiên qua các kịch bản đời sống thực tế với dàn nhân vật AI phong phú, gợi ý câu trả lời thông minh song ngữ Anh - Việt.</p>
+        <div class="hero-actions">
+          <button id="landing-start-btn" class="btn-landing-cta">Bắt đầu Luyện tập ngay 🚀</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- AI Chatbot Characters Showcase -->
+    <section class="landing-section">
+      <div class="section-header">
+        <span class="section-tag">AI Chatbots</span>
+        <h2 class="section-title">Gặp gỡ dàn nhân vật AI phong phú</h2>
+        <p class="section-desc">Mỗi Chatbot sở hữu một vai trò và kịch bản giao tiếp thực tế khác nhau để bạn rèn luyện phản xạ toàn diện.</p>
+      </div>
+      <div class="landing-chatbot-grid">
+        <div class="landing-card-item card-teacher">
+          <div class="landing-card-icon">👩‍🏫</div>
+          <h3>Cô giáo Anna</h3>
+          <span class="landing-card-badge">Teacher</span>
+          <p>Thực hành phỏng vấn xin việc bằng tiếng Anh, chỉnh sửa phát âm và hướng dẫn các cấu trúc ngữ pháp chi tiết.</p>
+        </div>
+        <div class="landing-card-item card-receptionist">
+          <div class="landing-card-icon">🏨</div>
+          <h3>Lễ tân Sophia</h3>
+          <span class="landing-card-badge">Receptionist</span>
+          <p>Tập luyện đặt phòng khách sạn, giao tiếp làm thủ tục nhận/trả phòng và xử lý các yêu cầu phát sinh.</p>
+        </div>
+        <div class="landing-card-item card-airport">
+          <div class="landing-card-icon">✈️</div>
+          <h3>Nhân viên David</h3>
+          <span class="landing-card-badge">Airport Staff</span>
+          <p>Học phản xạ hỏi đáp tại quầy check-in, làm thủ tục hải quan và khai báo hành lý tại sân bay.</p>
+        </div>
+        <div class="landing-card-item card-shopping">
+          <div class="landing-card-icon">👗</div>
+          <h3>Trợ lý Emily</h3>
+          <span class="landing-card-badge">Shopping Asst</span>
+          <p>Trải nghiệm mua sắm quần áo thời trang, hỏi size, màu sắc, đàm phán giá cả và thanh toán hóa đơn.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Features Showcase -->
+    <section class="landing-section bg-alt">
+      <div class="section-header">
+        <span class="section-tag">Tính năng chính</span>
+        <h2 class="section-title">Tại sao nên chọn Blubla Speakup?</h2>
+        <p class="section-desc">Công nghệ AI tiên tiến giúp bạn rút ngắn 80% thời gian làm chủ phản xạ nói tiếng Anh.</p>
+      </div>
+      <div class="landing-features-grid">
+        <div class="feature-item">
+          <div class="feature-item-icon">💬</div>
+          <h3>Giao diện 3 cột trực quan</h3>
+          <p>Tích hợp sẵn công cụ đàm thoại, dịch nhanh song ngữ và gợi ý câu nói thông minh trên một màn hình duy nhất.</p>
+        </div>
+        <div class="feature-item">
+          <div class="feature-item-icon">💡</div>
+          <h3>Gợi ý phản xạ thông minh</h3>
+          <p>Khi bí từ, AI sẽ tự động phân tích cuộc hội thoại và gợi ý 3-5 câu trả lời tự nhiên theo ngữ cảnh kèm bản dịch nghĩa.</p>
+        </div>
+        <div class="feature-item">
+          <div class="feature-item-icon">🏆</div>
+          <h3>Bảng xếp hạng thi đua</h3>
+          <p>Tích lũy điểm nói sau mỗi tin nhắn thoại gửi đi thành công. Thi đua thăng hạng và theo dõi thứ hạng của bạn.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Leaderboard Preview Section -->
+    <section class="landing-section">
+      <div class="section-header">
+        <span class="section-tag">Thi đua</span>
+        <h2 class="section-title">🏆 Gương mặt tiêu biểu</h2>
+        <p class="section-desc">Bảng thi đua điểm số tích lũy luyện nói của các học viên xuất sắc nhất hệ thống.</p>
+      </div>
+      <div class="landing-leaderboard-container">
+        <div class="landing-leaderboard-header">
+          <span>Hạng</span>
+          <span>Học viên</span>
+          <span>Tin nhắn</span>
+          <span>Điểm số</span>
+        </div>
+        <div id="landing-leaderboard-list" class="landing-leaderboard-list">
+          <div class="landing-leaderboard-placeholder">Đang tải bảng xếp hạng...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+      <p>© 2026 BluBla Speakup. Developed by Tenclass. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <div class="app-layout hidden">
     
     <!-- ─── Cột 2: Khung Chat Chính (Giữa) ─── -->
     <div id="app" class="main-column">
@@ -355,8 +456,9 @@
   </div> <!-- End of .app-layout -->
 
   <!-- Login Section Overlay -->
-  <div id="login-overlay" class="login-overlay">
-    <div class="login-card">
+  <div id="login-overlay" class="login-overlay hidden">
+    <div class="login-card" style="position: relative;">
+      <button id="close-login-btn" class="btn-close-login" title="Quay lại Landing Page">❌</button>
       <div class="login-logo">✨ Blubla Speakup</div>
       <p class="login-subtitle">Học Tiếng Anh Giao Tiếp 3 Cột với AI</p>
       

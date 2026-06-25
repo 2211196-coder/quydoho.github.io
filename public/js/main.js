@@ -275,6 +275,12 @@ class App {
         shocked: document.getElementById('emoji-shocked'),
       }, */
 
+      // Landing Page
+      landingView: document.getElementById('landing-view'),
+      landingStartBtn: document.getElementById('landing-start-btn'),
+      landingLeaderboardList: document.getElementById('landing-leaderboard-list'),
+      closeLoginBtn: document.getElementById('close-login-btn'),
+
       // Auth & Login
       loginOverlay: document.getElementById('login-overlay'),
       loginUsername: document.getElementById('login-username'),
@@ -1627,10 +1633,18 @@ class App {
 
   async _checkLoginState() {
     const savedUser = localStorage.getItem('currentUser');
+    const appLayout = document.querySelector('.app-layout');
+
     if (savedUser) {
       try {
         this.currentUser = JSON.parse(savedUser);
         console.log('[Auth] User logged in:', this.currentUser.username);
+        
+        // Hide Landing View
+        if (this.$.landingView) this.$.landingView.classList.add('hidden');
+        
+        // Show App Layout
+        if (appLayout) appLayout.classList.remove('hidden');
         
         // Hide Login overlay
         if (this.$.loginOverlay) this.$.loginOverlay.classList.add('hidden');
@@ -1664,14 +1678,36 @@ class App {
     } else {
       this.currentUser = null;
       this.device = null;
-      if (this.$.loginOverlay) this.$.loginOverlay.classList.remove('hidden');
+      
+      // Hide App Layout and show Landing Page
+      if (appLayout) appLayout.classList.add('hidden');
+      if (this.$.landingView) this.$.landingView.classList.remove('hidden');
+      
+      // Hide Login overlay by default on Landing Page
+      if (this.$.loginOverlay) this.$.loginOverlay.classList.add('hidden');
       if (this.$.userProfileBadge) this.$.userProfileBadge.classList.add('hidden');
       if (this.$.logoutBtn) this.$.logoutBtn.classList.add('hidden');
       if (this.$.adminDashboardBtn) this.$.adminDashboardBtn.classList.add('hidden');
+      
+      // Load Leaderboard for the Landing Page
+      this._loadLeaderboard();
     }
   }
 
   _bindAuthAndTabsEvents() {
+    // Landing Page events
+    if (this.$.landingStartBtn) {
+      this.$.landingStartBtn.addEventListener('click', () => {
+        if (this.$.loginOverlay) this.$.loginOverlay.classList.remove('hidden');
+      });
+    }
+
+    if (this.$.closeLoginBtn) {
+      this.$.closeLoginBtn.addEventListener('click', () => {
+        if (this.$.loginOverlay) this.$.loginOverlay.classList.add('hidden');
+      });
+    }
+
     // Submit Login form
     if (this.$.loginSubmitBtn) {
       this.$.loginSubmitBtn.addEventListener('click', () => {
@@ -2069,8 +2105,6 @@ class App {
   }
 
   async _loadLeaderboard() {
-    if (!this.$.leaderboardList) return;
-
     let leaderboard = [];
     try {
       const res = await fetch(getApiUrl('/api/leaderboard'));
@@ -2105,19 +2139,50 @@ class App {
         .sort((a, b) => b.score - a.score);
     }
 
-    this.$.leaderboardList.innerHTML = leaderboard.map((user, idx) => {
-      const rank = idx + 1;
-      const rankClass = rank <= 3 ? `rank-${rank}` : '';
-      const myRowClass = (this.currentUser && user.username.toLowerCase() === this.currentUser.username.toLowerCase()) ? 'my-row' : '';
-      return `
-        <div class="leaderboard-row ${rankClass} ${myRowClass}">
-          <span class="rank-cell">${rank}</span>
-          <span class="name-cell" title="${user.username}">${user.username}</span>
-          <span class="chat-cell">${user.chatCount}</span>
-          <span class="score-cell">${user.score} pts</span>
-        </div>
-      `;
-    }).join('');
+    if (this.$.leaderboardList) {
+      this.$.leaderboardList.innerHTML = leaderboard.map((user, idx) => {
+        const rank = idx + 1;
+        const rankClass = rank <= 3 ? `rank-${rank}` : '';
+        const myRowClass = (this.currentUser && user.username.toLowerCase() === this.currentUser.username.toLowerCase()) ? 'my-row' : '';
+        return `
+          <div class="leaderboard-row ${rankClass} ${myRowClass}">
+            <span class="rank-cell">${rank}</span>
+            <span class="name-cell" title="${user.username}">${user.username}</span>
+            <span class="chat-cell">${user.chatCount}</span>
+            <span class="score-cell">${user.score} pts</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render to landing page leaderboard list
+    if (this.$.landingLeaderboardList) {
+      if (leaderboard.length === 0) {
+        this.$.landingLeaderboardList.innerHTML = `<div class="landing-leaderboard-placeholder">Chưa có dữ liệu thi đua.</div>`;
+      } else {
+        this.$.landingLeaderboardList.innerHTML = leaderboard.map((user, idx) => {
+          const rank = idx + 1;
+          const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+          const medalHtml = medal ? `<span style="font-size:1.1rem; margin-right:4px;">${medal}</span>` : '';
+          const rankNumClass = rank <= 3 ? `rank-num-${rank}` : '';
+          const isMe = (this.currentUser && user.username.toLowerCase() === this.currentUser.username.toLowerCase()) ? 'my-row' : '';
+          const rankBadge = this._getRank(user.score || 0);
+          const userDisplayName = user.displayName || user.username;
+          return `
+            <div class="landing-leaderboard-row ${isMe}">
+              <span class="rank-num ${rankNumClass}">${rank}</span>
+              <div class="user-name-wrapper">
+                ${medalHtml}
+                <span class="user-name">${userDisplayName}</span>
+                <span class="top-user-rank-badge rank-${rankBadge.name.toLowerCase().split(' ')[0]}" style="font-size: 0.65rem; padding: 1px 4px; border-radius:4px; margin-left: 6px;">${rankBadge.icon} ${rankBadge.name.split(' ')[0]}</span>
+              </div>
+              <span>${user.chatCount}</span>
+              <span style="font-weight:700; color:var(--accent);">${user.score} pts</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
   }
 
   // ─── ADMIN DASHBOARD LOGIC ───
