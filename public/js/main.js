@@ -8,7 +8,6 @@ import { OtaClient } from './ota.js';
 import { XiaozhiProtocol } from './protocol.js';
 import { AudioPipeline } from './audio.js';
 import { ActivationManager } from './activation.js';
-import { AudioVisualizer } from './visualizer.js';
 
 // ─── Configuration ───────────────────────────────
 const WS_PROXY_URL = 'wss://xiaozhi-ws-proxy.kdcdigibots.workers.dev/';
@@ -194,7 +193,6 @@ class App {
     this.ota = null;
     this.protocol = new XiaozhiProtocol();
     this.audio = new AudioPipeline();
-    this.visualizer = null;
     this.state = STATE.IDLE;
     this.keepListening = false;
     this.currentTopic = null;
@@ -233,8 +231,6 @@ class App {
       // [DISABLED] emotionImg: document.getElementById('emotion-img'),
       statusText: document.getElementById('status-text'),
       chatLog: document.getElementById('chat-log'),
-      visualizerContainer: document.getElementById('visualizer-container'),
-      visualizerCanvas: document.getElementById('visualizer-canvas'),
       talkBtn: document.getElementById('talk-btn'),
       stopBtn: document.getElementById('stop-btn'),
       codeDisplay: document.getElementById('code-display'),
@@ -386,11 +382,6 @@ class App {
 
     await this.audio.init();
     this.audio.onEncoded = (data) => this.protocol.sendAudio(data);
-
-    if (this.$.visualizerCanvas) {
-      this.visualizer = new AudioVisualizer(this.$.visualizerCanvas, this.audio);
-      this.visualizer.start();
-    }
 
     this.protocol.onJson = (data) => this._onJson(data);
     this.protocol.onAudio = (data) => this.audio.decodeAudio(data);
@@ -753,9 +744,6 @@ class App {
 
   _setState(newState) {
     this.state = newState;
-    if (this.visualizer) {
-      this.visualizer.setAppState(newState);
-    }
     const labels = {
       [STATE.IDLE]: 'Đang chờ',
       [STATE.CONNECTING]: 'Đang kết nối...',
