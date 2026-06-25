@@ -2,7 +2,7 @@ node_modules/
 .env
 *.log
 knowledge/
-package-lock.json
+
 .gemini/
 
 .vercel

@@ -1,0 +1,61 @@
+graph TD
+    %% Frontend Application
+    subgraph Frontend ["Frontend (Browser - HTML/CSS/Vanilla JS)"]
+        UI[User Interface <br/> 3-Column Layout]
+        AppJS[main.js <br/> State Machine & UI Logic]
+        Audio[audio.js <br/> Opus Encoder/Decoder]
+        Protocol[protocol.js <br/> WebSocket Client]
+        OTA[ota.js <br/> Device Config & Activation]
+        DeviceM[device.js <br/> Device Manager]
+        ActM[activation.js <br/> Activation Flow]
+        
+        UI <--> AppJS
+        AppJS --> Audio
+        AppJS --> Protocol
+        AppJS --> OTA
+        AppJS --> DeviceM
+        AppJS --> ActM
+    end
+
+    %% Node.js Backend Server
+    subgraph Backend ["Backend Server (Node.js - Express)"]
+        Server[server.js]
+        DB[db.js <br/> JSON File Storage]
+        
+        %% APIs
+        AuthAPI["Auth API <br/> (/api/auth/*)"]
+        PoolAPI["Device Pool API <br/> (/api/pool/*)"]
+        AdminAPI["Admin API <br/> (/api/admin/*)"]
+        LLMAPI["Groq AI Proxy <br/> (/api/suggest, /api/translate)"]
+        OTAProxy["OTA/Activate Proxy <br/> (/api/ota, /api/activate)"]
+        
+        Server --> AuthAPI
+        Server --> PoolAPI
+        Server --> AdminAPI
+        Server --> LLMAPI
+        Server --> OTAProxy
+        Server --> DB
+        
+        %% Storage
+        DB --> JSONStore[(users.json <br/> connections.json <br/> pools.json)]
+    end
+
+    %% External Services
+    subgraph External ["External Services"]
+        Groq["Groq API <br/> (LLaMA Models)"]
+        Tenclass["Tenclass OTA Server <br/> (api.tenclass.net)"]
+        CFProxy["Cloudflare WS Proxy <br/> (xiaozhi-ws-proxy)"]
+        ESP32["ESP32 Chatbot Device"]
+    end
+
+    %% Interactions
+    AppJS -- "Login/Get Token" --> AuthAPI
+    AppJS -- "Lease/Release Device" --> PoolAPI
+    AppJS -- "Get Suggestions/Translate" --> LLMAPI
+    LLMAPI -- "Proxy LLM Requests" --> Groq
+    
+    OTA -- "Fetch Config/Activate" --> OTAProxy
+    OTAProxy -- "Proxy Requests" --> Tenclass
+    
+    Protocol -- "WebSocket Audio/JSON" --> CFProxy
+    CFProxy -- "Forward WS + Headers" --> ESP32

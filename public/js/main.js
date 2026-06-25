@@ -1,5 +1,5 @@
 /**
- * Nova Speaking Practice — Main Application (3-Column Layout)
+ * Blubla Speakup — Main Application (3-Column Layout)
  * State machine: IDLE → CONNECTING → LISTENING → SPEAKING
  */
 
@@ -144,7 +144,7 @@ const CHATBOTS = {
     topicEn: 'Airport Service',
     topicVi: 'Dịch vụ sân bay',
     emoji: '✈️',
-    greeting: 'Hello! Welcome to Nova Airlines check-in counter. ✈️ Can I please see your passport and flight ticket?'
+    greeting: 'Hello! Welcome to Blubla Airlines check-in counter. ✈️ Can I please see your passport and flight ticket?'
   },
   shopping: {
     id: 'shopping',
@@ -210,7 +210,19 @@ class App {
       connectionView: document.getElementById('connection-view'),
       connectionBtn: document.getElementById('connection-btn'),
       closeConnectionBtn: document.getElementById('close-connection-btn'),
+      globalControlPanel: document.getElementById('global-control-panel'),
+      mobileMenuBtn: document.getElementById('mobile-menu-btn'),
+      mobileTransBtn: document.getElementById('mobile-trans-btn'),
+      mobileRankBtn: document.getElementById('mobile-rank-btn'),
       chatbotSidebar: document.getElementById('chatbot-sidebar'),
+      suggestionSidebar: document.getElementById('suggestion-sidebar'),
+      closeSuggestionBtn: document.getElementById('close-suggestion-btn'),
+      inlineSuggestionContainer: document.getElementById('inline-suggestion-container'),
+      inlineSuggestionContent: document.getElementById('inline-suggestion-content'),
+      reloadSuggestionBtn: document.getElementById('reload-suggestion-btn'),
+      toggleSuggestionBtn: document.getElementById('toggle-suggestion-btn'),
+      drawerTransBtn: document.getElementById('drawer-trans-btn'),
+      drawerRankBtn: document.getElementById('drawer-rank-btn'),
       chatbotList: document.getElementById('chatbot-list'),
       chatbotCards: {},
       statusBadges: {},
@@ -461,13 +473,24 @@ class App {
     // Update Header UIs
     this.$.topicBadge.textContent = botConfig.topicEn;
     this.$.topicBadge.title = botConfig.topicVi;
-    document.getElementById('main-header-title').textContent = `✨ ${botConfig.name}`;
+    
+    const chatTitle = document.getElementById('chat-header-title');
+    if (chatTitle) chatTitle.textContent = `✨ ${botConfig.name}`;
 
     // Reload conversation history (User-scoped)
     this.$.chatLog.innerHTML = '';
     const username = this.currentUser ? this.currentUser.username.toLowerCase() : 'guest';
     const historyKey = `xiaozhi_history_${username}_${chatbotId}`;
     const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    
+    // Migration: Update old "Ms. Hoa" greetings to the new bot greeting
+    if (history && history.length > 0 && history[0].role === 'ai') {
+      if (history[0].text.includes('Hoa')) {
+        history[0].text = botConfig.greeting;
+        localStorage.setItem(historyKey, JSON.stringify(history));
+      }
+    }
+    
     this.chatHistories[chatbotId] = history;
 
     if (history && history.length > 0) {
@@ -952,14 +975,8 @@ class App {
   // ─── Suggestion Actions ────────────────────────
 
   _showSuggestionPlaceholder() {
-    this.$.suggestionList.classList.add('hidden');
-    this.$.suggestionStatus.classList.remove('hidden');
-    this.$.suggestionStatus.innerHTML = `
-      <div class="status-placeholder">
-        <span class="placeholder-icon">💬</span>
-        <p>Hội thoại với chatbot để xem gợi ý trả lời thông minh tại đây.</p>
-      </div>
-    `;
+    this.$.inlineSuggestionContainer.classList.add('hidden');
+    this.$.inlineSuggestionContent.innerHTML = '';
   }
 
   async _fetchSuggestions() {
@@ -969,15 +986,11 @@ class App {
       return;
     }
 
-    // Show loading spinner
-    this.$.suggestionList.classList.add('hidden');
-    this.$.suggestionStatus.classList.remove('hidden');
-    this.$.suggestionStatus.innerHTML = `
-      <div class="suggestion-loader">
-        <div class="spinner"></div>
-        <p>Đang tìm gợi ý phản hồi...</p>
-      </div>
-    `;
+    this.$.inlineSuggestionContainer.classList.remove('hidden');
+    this.$.inlineSuggestionContent.innerHTML = `<span style="color: var(--text-dim);">Đang tải gợi ý...</span>`;
+    this.$.inlineSuggestionContent.classList.remove('hidden');
+    this.$.reloadSuggestionBtn.classList.add('hidden');
+    this.$.toggleSuggestionBtn.textContent = '🔼';
 
     // Map conversation history
     const messages = history
@@ -1022,21 +1035,17 @@ class App {
       const data = await response.json();
       
       if (data && data.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
-        this.$.suggestionStatus.classList.add('hidden');
-        this.$.suggestionList.classList.remove('hidden');
-        this.$.suggestionList.innerHTML = data.suggestions.map(sug => {
-          const safeEn = sug.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-          return `
-            <div class="suggestion-item" onclick="window.appInstance.fillTextInput('${safeEn}')" style="cursor: pointer;" title="Bấm để chèn câu này vào ô chat">
-              <div class="suggestion-header">
-                <span class="suggestion-badge">💡 Gợi ý</span>
-                <button class="btn-copy-sug" onclick="event.stopPropagation(); navigator.clipboard.writeText('${safeEn}'); window.appInstance.showToast('Đã sao chép câu gợi ý thành công! 📋');" title="Sao chép câu này">📋</button>
-              </div>
-              <div class="suggestion-en">${sug.en}</div>
-              <div class="suggestion-vi">${sug.vi}</div>
-            </div>
-          `;
-        }).join('');
+        // Shuffle or pick random if reloading? Actually backend gives 3, let's pick a random one so reload gives different
+        const randomSug = data.suggestions[Math.floor(Math.random() * data.suggestions.length)];
+        
+        this.$.inlineSuggestionContainer.classList.remove('hidden');
+        
+        const safeEn = randomSug.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        this.$.inlineSuggestionContent.innerHTML = `<span>${randomSug.en}</span> <br/> <span style="color: var(--text-dim); font-size: 0.9em;">- ${randomSug.vi}</span>`;
+        // Default to hidden
+        this.$.inlineSuggestionContent.classList.add('hidden');
+        this.$.reloadSuggestionBtn.classList.add('hidden');
+        this.$.toggleSuggestionBtn.textContent = '🔽';
       } else {
         throw new Error("Dữ liệu gợi ý không đúng định dạng");
       }
@@ -1051,33 +1060,16 @@ class App {
     const sugs = FALLBACK_SUGGESTIONS[chatbotId] || [];
     
     if (sugs.length > 0) {
-      this.$.suggestionStatus.classList.add('hidden');
-      this.$.suggestionList.classList.remove('hidden');
-      this.$.suggestionList.innerHTML = `
-        <div style="padding: 10px; margin-bottom: 12px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; color: #f87171; line-height: 1.4;">
-          ⚠️ Không kết nối được Groq API (chưa nhập Key hoặc lỗi). Đang hiển thị gợi ý ngoại tuyến.
-        </div>
-      ` + sugs.map(sug => {
-        const safeEn = sug.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        return `
-          <div class="suggestion-item" onclick="window.appInstance.fillTextInput('${safeEn}')" style="cursor: pointer;" title="Bấm để chèn câu này vào ô chat">
-            <div class="suggestion-header">
-              <span class="suggestion-badge">💡 Gợi ý</span>
-              <button class="btn-copy-sug" onclick="event.stopPropagation(); navigator.clipboard.writeText('${safeEn}'); window.appInstance.showToast('Đã sao chép câu gợi ý thành công! 📋');" title="Sao chép câu này">📋</button>
-            </div>
-            <div class="suggestion-en">${sug.en}</div>
-            <div class="suggestion-vi">${sug.vi}</div>
-          </div>
-        `;
-      }).join('');
+      this.$.inlineSuggestionContainer.classList.remove('hidden');
+      const randomSug = sugs[Math.floor(Math.random() * sugs.length)];
+      const safeEn = randomSug.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      
+      this.$.inlineSuggestionContent.innerHTML = `<span style="color: #f87171;" title="Lỗi API, dùng Offline">⚠️</span> <span>${randomSug.en}</span> <br/> <span style="color: var(--text-dim); font-size: 0.9em;">- ${randomSug.vi}</span>`;
+      this.$.inlineSuggestionContent.classList.add('hidden');
+      this.$.reloadSuggestionBtn.classList.add('hidden');
+      this.$.toggleSuggestionBtn.textContent = '🔽';
     } else {
-      this.$.suggestionStatus.classList.remove('hidden');
-      this.$.suggestionStatus.innerHTML = `
-        <div class="status-placeholder" style="color: var(--danger);">
-          <span class="placeholder-icon">⚠️</span>
-          <p>Lỗi tải gợi ý: ${errorMsg}</p>
-        </div>
-      `;
+      this.$.inlineSuggestionContainer.classList.add('hidden');
     }
   }
 
@@ -1136,7 +1128,7 @@ class App {
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i];
       if (child.classList.contains(`chat-${role}`)) {
-        const label = role === 'ai' ? (CHATBOTS[this.currentChatbotId]?.displayName || 'Nova') : role === 'user' ? 'Bạn' : '⚙️';
+        const label = role === 'ai' ? (CHATBOTS[this.currentChatbotId]?.displayName || 'Blubla Speakup') : role === 'user' ? 'Bạn' : '⚙️';
         
         let innerHTML = `<span class="chat-label">${label}:</span> <span class="chat-text">${text}</span>`;
         if (role === 'ai') {
@@ -1209,7 +1201,7 @@ class App {
   _addChatUI(role, text) {
     const el = document.createElement('div');
     el.className = `chat-msg chat-${role}`;
-    const label = role === 'ai' ? (CHATBOTS[this.currentChatbotId]?.displayName || 'Nova') : role === 'user' ? 'Bạn' : '⚙️';
+    const label = role === 'ai' ? (CHATBOTS[this.currentChatbotId]?.displayName || 'Blubla Speakup') : role === 'user' ? 'Bạn' : '⚙️';
     
     let innerHTML = `<span class="chat-label">${label}:</span> <span class="chat-text">${text}</span>`;
     if (role === 'ai') {
@@ -1305,18 +1297,52 @@ class App {
       }
     });
 
-    // Mobile menu button
+    // Mobile menu button toggles global control panel
     this.$.mobileMenuBtn.addEventListener('click', () => {
-      this.$.chatbotSidebar.classList.toggle('show-mobile');
+      if (this.$.globalControlPanel) {
+        this.$.globalControlPanel.classList.toggle('show-dropdown');
+      }
     });
 
-    // Close mobile menu if clicked outside
+    // Drawer buttons for Translation and Rank
+    this.$.drawerTransBtn?.addEventListener('click', () => {
+      if (this.$.globalControlPanel) this.$.globalControlPanel.classList.remove('show-dropdown');
+      this.$.suggestionSidebar.classList.add('show-mobile');
+      document.querySelector('[data-sidebar-tab="translation"]')?.click();
+    });
+
+    this.$.drawerRankBtn?.addEventListener('click', () => {
+      if (this.$.globalControlPanel) this.$.globalControlPanel.classList.remove('show-dropdown');
+      this.$.suggestionSidebar.classList.add('show-mobile');
+      document.querySelector('[data-sidebar-tab="leaderboard"]')?.click();
+    });
+
+    this.$.toggleSuggestionBtn?.addEventListener('click', () => {
+      const isHidden = this.$.inlineSuggestionContent.classList.contains('hidden');
+      if (isHidden) {
+        this.$.inlineSuggestionContent.classList.remove('hidden');
+        this.$.reloadSuggestionBtn.classList.remove('hidden');
+        this.$.toggleSuggestionBtn.textContent = '🔼';
+      } else {
+        this.$.inlineSuggestionContent.classList.add('hidden');
+        this.$.reloadSuggestionBtn.classList.add('hidden');
+        this.$.toggleSuggestionBtn.textContent = '🔽';
+      }
+    });
+
+    this.$.closeSuggestionBtn?.addEventListener('click', () => {
+      this.$.suggestionSidebar.classList.remove('show-mobile');
+    });
+
+    // Close mobile dropdown if clicked outside
     document.addEventListener('click', (e) => {
-      if (window.innerWidth <= 900 &&
-        this.$.chatbotSidebar.classList.contains('show-mobile') &&
-        !this.$.chatbotSidebar.contains(e.target) &&
-        !this.$.mobileMenuBtn.contains(e.target)) {
-        this.$.chatbotSidebar.classList.remove('show-mobile');
+      if (window.innerWidth <= 900) {
+        if (this.$.globalControlPanel && 
+            this.$.globalControlPanel.classList.contains('show-dropdown') &&
+            !this.$.globalControlPanel.contains(e.target) &&
+            !this.$.mobileMenuBtn.contains(e.target)) {
+          this.$.globalControlPanel.classList.remove('show-dropdown');
+        }
       }
     });
 
@@ -1387,6 +1413,9 @@ class App {
 
     // Translation Box
     this.$.transBtn.addEventListener('click', () => this._translate());
+
+    // Inline suggestion reload
+    this.$.reloadSuggestionBtn?.addEventListener('click', () => this._fetchSuggestions());
     this.$.transInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -1753,13 +1782,10 @@ class App {
         btn.classList.add('active');
 
         const target = btn.dataset.sidebarTab;
-        this.$.panelSuggestions.classList.add('hidden');
         this.$.panelTranslation.classList.add('hidden');
         this.$.panelLeaderboard.classList.add('hidden');
 
-        if (target === 'suggestions') {
-          this.$.panelSuggestions.classList.remove('hidden');
-        } else if (target === 'translation') {
+        if (target === 'translation') {
           this.$.panelTranslation.classList.remove('hidden');
         } else if (target === 'leaderboard') {
           this.$.panelLeaderboard.classList.remove('hidden');

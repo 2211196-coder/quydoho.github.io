@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Nova — AI Luyện Speaking 3 Cột</title>
-  <meta name="description" content="Nova — AI luyện tiếng Anh giao tiếp song ngữ Anh-Việt với giao diện 3 cột và gợi ý thông minh">
+  <title>BluBla Speakup</title>
+  <meta name="description" content="Blubla Speakup — AI luyện tiếng Anh giao tiếp song ngữ Anh-Việt với giao diện 3 cột và gợi ý thông minh">
   <!-- [DISABLED] Biểu cảm GIF favicon
   <link rel="icon" href="assets/emojis/neutral.gif" type="image/gif">
   -->
@@ -13,8 +13,21 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <!-- Global floating brand panel -->
+  <div id="global-brand-panel" class="global-brand-panel">
+    <h1 id="main-header-title">✨ Blubla Speakup</h1>
+  </div>
+
   <!-- Global floating control panel -->
-  <div class="global-control-panel">
+  <div id="global-control-panel" class="global-control-panel">
+    <button id="drawer-trans-btn" class="global-btn hidden-desktop" title="Dịch thuật">
+      <span class="btn-icon">🔄</span>
+      <span class="btn-label">Dịch thuật</span>
+    </button>
+    <button id="drawer-rank-btn" class="global-btn hidden-desktop" title="Xếp hạng">
+      <span class="btn-icon">🏆</span>
+      <span class="btn-label">Xếp hạng</span>
+    </button>
     <button id="admin-dashboard-btn" class="global-btn hidden" title="Bảng quản trị Admin">
       <span class="btn-icon">📊</span>
       <span class="btn-label">Admin</span>
@@ -45,24 +58,24 @@
     <!-- ─── Cột 2: Khung Chat Chính (Giữa) ─── -->
     <div id="app" class="main-column">
 
-        <!-- Header -->
         <header class="header">
           <div class="header-left">
             <button id="mobile-menu-btn" class="btn-icon-only hidden-desktop" title="Danh sách Chatbot">☰</button>
-            <h1 id="main-header-title">✨ Nova</h1>
           </div>
           <div class="header-right">
-            <!-- Hàng thông tin cần thiết hiển thị bên dưới -->
-
             <!-- Hàng thông tin cần thiết hiển thị bên dưới -->
             <div class="header-info-row">
               <!-- User Profile Section -->
               <div id="user-profile-badge" class="user-profile-badge hidden">
-                <span class="user-name" id="profile-username">User</span>
-                <span class="user-badge" id="profile-rank">Bronze</span>
-                <span class="user-points" id="profile-score">0 pts</span>
-                <div class="user-progress-bar-container" title="Tiến trình lên cấp kế tiếp">
-                  <div class="user-progress-bar" id="profile-progress" style="width: 0%;"></div>
+                <div class="user-profile-row" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                  <span class="user-name" id="profile-username">User</span>
+                  <span class="user-badge" id="profile-rank">Bronze</span>
+                </div>
+                <div class="user-profile-row" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                  <span class="user-points" id="profile-score">0 pts</span>
+                  <div class="user-progress-bar-container" title="Tiến trình lên cấp kế tiếp" style="width: 60px; margin-top: 0;">
+                    <div class="user-progress-bar" id="profile-progress" style="width: 0%;"></div>
+                  </div>
                 </div>
               </div>
 
@@ -117,7 +130,7 @@
       <div id="activation-view" class="view hidden">
         <div class="activation-card">
           <div class="activation-icon">✨</div>
-          <h1 id="activation-title">Nova Activation</h1>
+          <h1 id="activation-title">Blubla Speakup Activation</h1>
           <p>Ứng dụng chưa được liên kết. Vui lòng nhập mã bên dưới vào hệ thống quản lý để kích hoạt chatbot này.</p>
           <div id="code-display" class="code-display">— — — —</div>
           <p id="activation-status" class="activation-status">Đang kết nối...</p>
@@ -129,7 +142,7 @@
       <div id="empty-view" class="view hidden">
         <div class="empty-content">
           <!-- [DISABLED] Biểu cảm GIF avatar
-          <img src="assets/emojis/happy.gif" alt="Nova" class="empty-avatar">
+          <img src="assets/emojis/happy.gif" alt="Blubla Speakup" class="empty-avatar">
           -->
           <h2>Chào bạn!</h2>
           <p>Hãy chọn một chatbot ở cột bên trái để bắt đầu luyện tập nói nhé! ✨</p>
@@ -150,6 +163,18 @@
 
         <!-- Text Input -->
         <div class="input-row">
+          <!-- Inline Suggestion (Floating above right) -->
+          <div id="inline-suggestion-container" class="inline-suggestion-container hidden">
+            <div class="inline-suggestion-header">
+              <span class="suggestion-badge">💡 Gợi ý:</span>
+              <div style="display: flex; gap: 4px;">
+                <button id="reload-suggestion-btn" class="btn-icon-only" title="Tải lại gợi ý khác">🔄</button>
+                <button id="toggle-suggestion-btn" class="btn-icon-only" title="Hiện/Ẩn Gợi ý">🔽</button>
+              </div>
+            </div>
+            <div id="inline-suggestion-content" class="inline-suggestion-content hidden"></div>
+          </div>
+          
           <input id="text-input" type="text" placeholder="Nhập tin nhắn bằng tiếng Anh..." class="text-input" autocomplete="off">
           <button id="send-btn" class="btn-send" title="Gửi">➤</button>
         </div>
@@ -272,31 +297,14 @@
     
     <!-- ─── Cột 3: Gợi Ý Câu Trả Lời (Phải) ─── -->
     <aside id="suggestion-sidebar" class="sidebar suggestion-sidebar">
+      <button id="close-suggestion-btn" class="btn-icon-only hidden-desktop" style="position: absolute; right: 10px; top: 10px; z-index: 10; font-size: 1rem; opacity: 0.7;" title="Đóng">❌</button>
       <div class="sidebar-tabs">
-        <button class="sidebar-tab active" data-sidebar-tab="suggestions">💡 Gợi ý</button>
-        <button class="sidebar-tab" data-sidebar-tab="translation">🔄 Dịch thuật</button>
+        <button class="sidebar-tab active" data-sidebar-tab="translation">🔄 Dịch thuật</button>
         <button class="sidebar-tab" data-sidebar-tab="leaderboard">🏆 Xếp hạng</button>
       </div>
 
-      <!-- TAB 1: GỢI Ý PHẢN HỒI -->
-      <div class="sidebar-tab-content-panel" id="panel-suggestions">
-        <div class="sidebar-header">
-          <div class="logo">💡 Gợi ý phản hồi</div>
-          <p class="sidebar-desc">Tự luyện nói bằng cách đọc theo các câu trả lời tự nhiên dưới đây</p>
-        </div>
-
-        <div id="suggestion-status" class="suggestion-status-box">
-          <div class="status-placeholder">
-            <span class="placeholder-icon">💬</span>
-            <p>Hội thoại với chatbot để xem gợi ý trả lời thông minh tại đây.</p>
-          </div>
-        </div>
-
-        <div id="suggestion-list" class="suggestion-list hidden"></div>
-      </div>
-
-      <!-- TAB 2: DỊCH THUẬT NHANH -->
-      <div class="sidebar-tab-content-panel hidden" id="panel-translation">
+      <!-- TAB 1: DỊCH THUẬT NHANH -->
+      <div class="sidebar-tab-content-panel" id="panel-translation">
         <div class="sidebar-header">
           <div class="logo">🔄 Dịch thuật nhanh</div>
           <p class="sidebar-desc">Dịch nhanh các ý tưởng giao tiếp song ngữ Việt - Anh</p>
@@ -350,7 +358,7 @@
   <!-- Login Section Overlay -->
   <div id="login-overlay" class="login-overlay">
     <div class="login-card">
-      <div class="login-logo">✨ Nova Speaking</div>
+      <div class="login-logo">✨ Blubla Speakup</div>
       <p class="login-subtitle">Học Tiếng Anh Giao Tiếp 3 Cột với AI</p>
       
       <div class="login-form">

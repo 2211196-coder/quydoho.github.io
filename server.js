@@ -24,39 +24,40 @@ const CACHE_TTL = 60000;
 const POOLS_CACHE_TTL = 5000;
 
 async function readUsers() {
-  if (cache.users.data && Date.now() < cache.users.expiry) return cache.users.data;
+  if (cache.users.data) return cache.users.data;
   const users = await db.readUsers();
   cache.users = { data: users, expiry: Date.now() + CACHE_TTL };
   return users;
 }
 
-async function writeUsers(users) {
-  await db.writeUsers(users);
+function writeUsers(users) {
   cache.users = { data: users, expiry: Date.now() + CACHE_TTL };
+  db.writeUsers(users).catch(err => console.error('[DB] Background writeUsers error:', err));
 }
 
 async function readConnections() {
-  if (cache.connections.data && Date.now() < cache.connections.expiry) return cache.connections.data;
+  if (cache.connections.data) return cache.connections.data;
   const conns = await db.readConnections();
   cache.connections = { data: conns, expiry: Date.now() + CACHE_TTL };
   return conns;
 }
 
-async function writeConnections(connections) {
-  await db.writeConnections(connections);
+function writeConnections(connections) {
   cache.connections = { data: connections, expiry: Date.now() + CACHE_TTL };
+  db.writeConnections(connections).catch(err => console.error('[DB] Background writeConnections error:', err));
 }
 
 async function readPools() {
-  if (cache.pools.data && Date.now() < cache.pools.expiry) return cache.pools.data;
+  if (cache.pools.data) return cache.pools.data;
   const pools = await db.readPools();
   cache.pools = { data: pools, expiry: Date.now() + POOLS_CACHE_TTL };
   return pools;
 }
 
-async function writePools(pools) {
-  await db.writePools(pools);
+function writePools(pools) {
   cache.pools = { data: pools, expiry: Date.now() + POOLS_CACHE_TTL };
+  // Perform background save to avoid blocking API
+  db.writePools(pools).catch(err => console.error('[DB] Background writePools error:', err));
 }
 
 
