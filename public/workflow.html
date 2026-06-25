@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nova SpeakUp - Interactive System Workflow Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-base: #0b0f19;
+      --bg-surface: rgba(17, 24, 39, 0.7);
+      --bg-surface-hover: rgba(31, 41, 55, 0.8);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      
+      /* Accents */
+      --primary: #6366f1; /* Indigo */
+      --primary-glow: rgba(99, 102, 241, 0.15);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.15);
+      --pink: #ec4899;
+      --pink-glow: rgba(236, 72, 153, 0.15);
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.15);
+      --yellow: #eab308;
+      
+      /* Node specific colors */
+      --color-user: #3b82f6;
+      --color-vercel: #6366f1;
+      --color-cf: #f97316;
+      --color-db: #10b981;
+      --color-ai: #a855f7;
+      --color-ws: #ec4899;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Background Glow Effects */
+    .bg-glows {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .glow-1 {
+      position: absolute;
+      top: -10%;
+      left: -10%;
+      width: 50%;
+      height: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+      filter: blur(100px);
+    }
+    .glow-2 {
+      position: absolute;
+      bottom: -10%;
+      right: -10%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, transparent 70%);
+      filter: blur(120px);
+    }
+
+    /* Container & Header */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 50%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      font-family: 'Space Grotesk', sans-serif;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .header-links {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 12px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Main Grid Layout */
+    .grid {
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sidebar controls */
+    .sidebar {
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: 0.02em;
+      border-left: 3px solid var(--primary);
+      padding-left: 0.75rem;
+    }
+
+    .tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .tab-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+      width: 100%;
+      padding: 0.85rem 1.1rem;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 14px;
+      color: var(--text-secondary);
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      background: var(--bg-surface-hover);
+      color: var(--text-primary);
+    }
+
+    .tab-btn.active {
+      background: rgba(99, 102, 241, 0.08);
+      border-color: rgba(99, 102, 241, 0.25);
+      color: #a5b4fc;
+    }
+
+    .tab-btn-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tab-btn-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .tab-btn.active .tab-btn-desc {
+      color: #a5b4fc;
+      opacity: 0.8;
+    }
+
+    /* Simulation Control Box */
+    .sim-panel {
+      border: 1px dashed rgba(99, 102, 241, 0.3);
+      background: rgba(99, 102, 241, 0.02);
+      border-radius: 16px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .sim-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .status-dot.active {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+
+    /* Canvas / Display area */
+    .canvas-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .display-card {
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 2rem;
+      min-height: 520px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    /* The interactive SVG Diagram */
+    .workflow-svg {
+      width: 100%;
+      max-width: 800px;
+      height: auto;
+      z-index: 10;
+    }
+
+    .node {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .node:hover {
+      filter: drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.2));
+    }
+
+    .node.active {
+      filter: drop-shadow(0px 0px 15px var(--node-glow, rgba(99, 102, 241, 0.4)));
+    }
+
+    .node-bg {
+      fill: #1e293b;
+      stroke: var(--border-color);
+      stroke-width: 2;
+      transition: all 0.3s ease;
+    }
+
+    .node.active .node-bg {
+      stroke: var(--node-color, var(--primary));
+      fill: rgba(30, 41, 59, 0.95);
+      stroke-width: 3;
+    }
+
+    .node-icon-circle {
+      fill: rgba(255, 255, 255, 0.03);
+      stroke: rgba(255, 255, 255, 0.05);
+      stroke-width: 1;
+    }
+
+    .node.active .node-icon-circle {
+      fill: var(--node-glow-color, rgba(99, 102, 241, 0.1));
+      stroke: var(--node-color, var(--primary));
+      stroke-width: 1.5;
+    }
+
+    .node-text-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      fill: var(--text-primary);
+    }
+
+    .node-text-sub {
+      font-size: 10px;
+      fill: var(--text-secondary);
+    }
+
+    .flow-line {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.08);
+      stroke-width: 2;
+      stroke-dasharray: 6 4;
+      transition: all 0.3s ease;
+    }
+
+    .flow-line.active {
+      stroke: var(--line-color, var(--primary));
+      stroke-width: 3;
+      stroke-dasharray: 8 4;
+      animation: dash 30s linear infinite;
+    }
+
+    .flow-line.active.reverse {
+      animation: dash-reverse 30s linear infinite;
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -1000;
+      }
+    }
+
+    @keyframes dash-reverse {
+      to {
+        stroke-dashoffset: 1000;
+      }
+    }
+
+    /* Packet animation element */
+    .packet {
+      fill: var(--packet-color, var(--primary));
+      filter: drop-shadow(0 0 6px var(--packet-color, var(--primary)));
+      opacity: 0;
+    }
+
+    .packet.animating {
+      opacity: 1;
+    }
+
+    /* Info Panel at the bottom */
+    .info-panel {
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 1.75rem;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      .info-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .info-content h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #a5b4fc;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .info-content p {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .info-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 0.75rem;
+      font-size: 0.88rem;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+
+    .step-item.active .step-num {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 0 8px var(--primary-glow);
+    }
+
+    .step-text {
+      color: var(--text-secondary);
+    }
+
+    .step-item.active .step-text {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .code-references {
+      border-left: 1px solid var(--border-color);
+      padding-left: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .code-references {
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        padding-left: 0;
+        padding-top: 1.5rem;
+      }
+    }
+
+    .code-ref-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .file-tag-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .file-tag {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      font-family: monospace;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .file-tag:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+      color: var(--text-primary);
+      transform: translateX(3px);
+    }
+
+    .file-tag svg {
+      width: 14px;
+      height: 14px;
+      color: var(--text-muted);
+    }
+
+    /* Live terminal box for simulator logs */
+    .terminal-box {
+      width: 100%;
+      background: rgba(5, 7, 12, 0.95);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 1rem;
+      height: 180px;
+      overflow-y: auto;
+      box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.8);
+      margin-top: 1.5rem;
+      display: none;
+    }
+
+    .terminal-box.visible {
+      display: block;
+    }
+
+    .terminal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 5px;
+    }
+
+    .tdot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .tdot-red { background: #ef4444; }
+    .tdot-yellow { background: #f59e0b; }
+    .tdot-green { background: #10b981; }
+
+    .terminal-logs {
+      font-size: 0.8rem;
+      color: #38bdf8; /* light blue console text */
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .log-line {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .log-time {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .log-msg-success { color: var(--green); }
+    .log-msg-info { color: #38bdf8; }
+    .log-msg-warning { color: var(--yellow); }
+    .log-msg-error { color: #f87171; }
+    .log-msg-packet { color: var(--pink); }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="bg-glows">
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+  </div>
+
+  <div class="container">
+    <header>
+      <div class="brand">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1>Nova SpeakUp</h1>
+        <span class="brand-badge">Workflow Explorer</span>
+      </div>
+      <div class="header-links">
+        <a href="/" class="btn btn-outline">Quay lại Trang chủ</a>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Sidebar Control Panel -->
+      <div class="sidebar">
+        <h2 class="section-title">Các Phân Hệ Data Flow</h2>
+        
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchPhase('overview')">
+            <span class="tab-btn-title">
+              <span style="color: var(--primary);">●</span> 0. Kiến Trúc Tổng Thể
+            </span>
+            <span class="tab-btn-desc">Tổng quan kết nối phần cứng và máy chủ</span>
+          </button>
+          
+          <button class="tab-btn" onclick="switchPhase('login')">
+            <span class="tab-btn-title">
+              <span style="color: var(--color-db);">●</span> 1. Đăng nhập & Lưu trữ DB
+            </span>
+            <span class="tab-btn-desc">Đồng bộ Sheets, Supabase, MongoDB</span>
+          </button>
+          
+          <button class="tab-btn" onclick="switchPhase('lease')">
+            <span class="tab-btn-title">
+              <span style="color: var(--color-vercel);">●</span> 2. Thuê & Heartbeat Thiết bị
+            </span>
+            <span class="tab-btn-desc">Quản lý pool thiết bị tránh xung đột</span>
+          </button>
+          
+          <button class="tab-btn" onclick="switchPhase('websocket')">
+            <span class="tab-btn-title">
+              <span style="color: var(--color-cf);">●</span> 3. WebSocket Audio (Proxy)
+            </span>
+            <span class="tab-btn-desc">Cloudflare Worker inject Auth Headers</span>
+          </button>
+          
+          <button class="tab-btn" onclick="switchPhase('suggest')">
+            <span class="tab-btn-title">
+              <span style="color: var(--color-ai);">●</span> 4. AI Gợi ý & Dịch thuật
+            </span>
+            <span class="tab-btn-desc">API Proxy tới Groq với cơ chế Fallback</span>
+          </button>
+        </div>
+
+        <div class="sim-panel">
+          <h2 class="section-title">Bộ Mô Phỏng Live Session</h2>
+          <div class="sim-status">
+            <span id="sim-dot" class="status-dot"></span>
+            <span id="sim-status-text">Đang rảnh (Idle)</span>
+          </div>
+          <button id="sim-btn" class="btn btn-primary" onclick="toggleSimulation()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 3L19 12L5 21V3Z" fill="currentColor"/>
+            </svg>
+            Bắt đầu mô phỏng
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Visualizing Canvas -->
+      <div class="canvas-container">
+        <div class="display-card">
+          <!-- The Workflow SVG Diagram -->
+          <svg class="workflow-svg" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Defs for arrows, glows, etc. -->
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 1L10 5L0 9z" fill="rgba(255,255,255,0.2)"/>
+              </marker>
+              <marker id="arrow-active-primary" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 1L10 5L0 9z" fill="#6366f1"/>
+              </marker>
+              <marker id="arrow-active-cyan" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 1L10 5L0 9z" fill="#06b6d4"/>
+              </marker>
+              <marker id="arrow-active-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 1L10 5L0 9z" fill="#10b981"/>
+              </marker>
+              <marker id="arrow-active-pink" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 1L10 5L0 9z" fill="#ec4899"/>
+              </marker>
+            </defs>
+
+            <!-- CONNECTIONS (PATHS) -->
+            <!-- 1. Browser <--> Vercel HTTP (Main Route) -->
+            <path id="path-user-vercel" class="flow-line" d="M190 220 L300 220" marker-end="url(#arrow)"/>
+            
+            <!-- 2. Browser <--> Cloudflare WS Proxy -->
+            <path id="path-user-cf" class="flow-line" d="M190 240 L380 320" marker-end="url(#arrow)"/>
+            
+            <!-- 3. Vercel <--> Databases -->
+            <path id="path-vercel-db" class="flow-line" d="M360 170 L360 85" marker-end="url(#arrow)"/>
+            
+            <!-- 4. Vercel <--> Groq AI -->
+            <path id="path-vercel-ai" class="flow-line" d="M420 185 L560 105" marker-end="url(#arrow)"/>
+            
+            <!-- 5. Vercel <--> Tenclass OTA -->
+            <path id="path-vercel-ota" class="flow-line" d="M420 220 L570 220" marker-end="url(#arrow)"/>
+            
+            <!-- 6. Cloudflare WS Proxy <--> Tenclass WebSocket -->
+            <path id="path-cf-ws" class="flow-line" d="M480 340 L570 340" marker-end="url(#arrow)"/>
+            
+            <!-- 7. Tenclass WebSocket <--> ESP32 Chatbot (Hardware) -->
+            <path id="path-ws-device" class="flow-line" d="M680 340 L710 340" marker-end="url(#arrow)"/>
+
+            <!-- ANIMATED DATA PACKETS -->
+            <circle id="pkt-user-vercel" class="packet" r="5" cx="0" cy="0"/>
+            <circle id="pkt-user-cf" class="packet" r="5" cx="0" cy="0"/>
+            <circle id="pkt-vercel-db" class="packet" r="5" cx="0" cy="0"/>
+            <circle id="pkt-vercel-ai" class="packet" r="5" cx="0" cy="0"/>
+            <circle id="pkt-vercel-ota" class="packet" r="5" cx="0" cy="0"/>
+            <circle id="pkt-cf-ws" class="packet" r="5" cx="0" cy="0"/>
+            <circle id="pkt-ws-device" class="packet" r="5" cx="0" cy="0"/>
+
+            <!-- NODES -->
+            
+            <!-- NODE 1: Browser User -->
+            <g id="node-user" class="node active" onclick="highlightNode('user')" style="--node-color: var(--color-user); --node-glow: rgba(59, 130, 246, 0.4); --node-glow-color: rgba(59, 130, 246, 0.1);">
+              <rect class="node-bg" x="40" y="165" width="150" height="110" rx="16"/>
+              <circle class="node-icon-circle" cx="115" cy="205" r="22"/>
+              <!-- Micro Icon -->
+              <path d="M110 198v8c0 2.8 2.2 5 5 5s5-2.2 5-5v-8c0-2.8-2.2-5-5-5s-5 2.2-5 5z" fill="#3b82f6"/>
+              <path d="M106 204a9 9 0 0018 0" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+              <path d="M115 213v5M110 218h10" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+              
+              <text class="node-text-title" x="115" y="248" text-anchor="middle">Browser (Client)</text>
+              <text class="node-text-sub" x="115" y="262" text-anchor="middle">blublaspeakup.io.vn</text>
+            </g>
+
+            <!-- NODE 2: Vercel Express API -->
+            <g id="node-vercel" class="node" onclick="highlightNode('vercel')" style="--node-color: var(--color-vercel); --node-glow: rgba(99, 102, 241, 0.4); --node-glow-color: rgba(99, 102, 241, 0.1);">
+              <rect class="node-bg" x="300" y="170" width="120" height="100" rx="16"/>
+              <circle class="node-icon-circle" cx="360" cy="205" r="20"/>
+              <!-- Vercel logo style delta -->
+              <path d="M360 196l10 16h-20z" fill="#6366f1"/>
+              
+              <text class="node-text-title" x="360" y="245" text-anchor="middle">Vercel Server</text>
+              <text class="node-text-sub" x="360" y="258" text-anchor="middle">Express Backend</text>
+            </g>
+
+            <!-- NODE 3: Databases -->
+            <g id="node-db" class="node" onclick="highlightNode('db')" style="--node-color: var(--color-db); --node-glow: rgba(16, 185, 129, 0.4); --node-glow-color: rgba(16, 185, 129, 0.1);">
+              <rect class="node-bg" x="290" y="20" width="140" height="65" rx="12"/>
+              <!-- DB cylinder icon -->
+              <path d="M310 38c0 3 6 5 13 5s13-2 13-5v14c0 3-6 5-13 5s-13-2-13-5V38z" fill="none" stroke="#10b981" stroke-width="2"/>
+              <path d="M310 38c0-3 6-5 13-5s13 2 13 5" fill="none" stroke="#10b981" stroke-width="2"/>
+              <path d="M310 45c0 3 6 5 13 5s13-2 13-5" fill="none" stroke="#10b981" stroke-width="2"/>
+              
+              <text class="node-text-title" x="375" y="48">Database</text>
+              <text class="node-text-sub" x="375" y="60">Google Sheets/Cloud</text>
+            </g>
+
+            <!-- NODE 4: Groq AI -->
+            <g id="node-ai" class="node" onclick="highlightNode('ai')" style="--node-color: var(--color-ai); --node-glow: rgba(168, 85, 247, 0.4); --node-glow-color: rgba(168, 85, 247, 0.1);">
+              <rect class="node-bg" x="560" y="55" width="130" height="70" rx="14"/>
+              <!-- Brain icon -->
+              <path d="M580 95c0-8 6-12 12-12s9 4 9 9v3m0-12c0-8 6-12 12-12s9 4 9 9v3" stroke="#a855f7" stroke-width="2" stroke-linecap="round" fill="none"/>
+              <circle cx="600" cy="85" r="2" fill="#a855f7"/>
+              <circle cx="615" cy="80" r="2" fill="#a855f7"/>
+              
+              <text class="node-text-title" x="625" y="105" text-anchor="middle">Groq API</text>
+              <text class="node-text-sub" x="625" y="117" text-anchor="middle">LLaMA Models</text>
+            </g>
+
+            <!-- NODE 5: Cloudflare WS Proxy -->
+            <g id="node-cf" class="node" onclick="highlightNode('cf')" style="--node-color: var(--color-cf); --node-glow: rgba(249, 115, 22, 0.4); --node-glow-color: rgba(249, 115, 22, 0.1);">
+              <rect class="node-bg" x="380" y="305" width="100" height="70" rx="14"/>
+              <!-- Cloud icon -->
+              <path d="M420 325a5 5 0 018 3 4 4 0 015 6h-16a4 4 0 013-9z" fill="#f97316"/>
+              
+              <text class="node-text-title" x="430" y="352" text-anchor="middle">CF Worker</text>
+              <text class="node-text-sub" x="430" y="364" text-anchor="middle">WS Header Inject</text>
+            </g>
+
+            <!-- NODE 6: Tenclass WS Server -->
+            <g id="node-ws" class="node" onclick="highlightNode('ws')" style="--node-color: var(--color-ws); --node-glow: rgba(236, 72, 153, 0.4); --node-glow-color: rgba(236, 72, 153, 0.1);">
+              <rect class="node-bg" x="570" y="180" width="110" height="185" rx="16"/>
+              <!-- Signal icon -->
+              <path d="M605 230a10 10 0 0114 0m-11 3a6 6 0 018 0m-6 3a2 2 0 013 0" stroke="#ec4899" stroke-width="2" stroke-linecap="round" fill="none"/>
+              
+              <text class="node-text-title" x="625" y="270" text-anchor="middle">Tenclass</text>
+              <text class="node-text-title" x="625" y="285" text-anchor="middle">OTA & WS</text>
+              <text class="node-text-sub" x="625" y="300" text-anchor="middle">api.tenclass.net</text>
+            </g>
+
+            <!-- NODE 7: ESP32 Chatbot Device -->
+            <g id="node-device" class="node" onclick="highlightNode('device')" style="--node-color: #38bdf8; --node-glow: rgba(56, 189, 248, 0.4); --node-glow-color: rgba(56, 189, 248, 0.1);">
+              <rect class="node-bg" x="710" y="305" width="80" height="70" rx="12"/>
+              <!-- Microchip chip icon -->
+              <rect x="730" y="325" width="20" height="20" rx="2" fill="none" stroke="#38bdf8" stroke-width="2"/>
+              <path d="M727 330h3m0 5h-3m3 5h-3m26-10h-3m3 5h-3m3 5h-3" stroke="#38bdf8" stroke-width="2"/>
+              
+              <text class="node-text-title" x="750" y="357" text-anchor="middle">ESP32</text>
+              <text class="node-text-sub" x="750" y="367" text-anchor="middle">Chatbot</text>
+            </g>
+          </svg>
+
+          <!-- Terminal output for simulation logs -->
+          <div id="terminal" class="terminal-box">
+            <div class="terminal-header">
+              <div class="terminal-dots">
+                <span class="tdot tdot-red"></span>
+                <span class="tdot tdot-yellow"></span>
+                <span class="tdot tdot-green"></span>
+              </div>
+              <div>nova-simulation-logs.sh</div>
+              <div style="cursor:pointer;" onclick="clearLogs()">Clear</div>
+            </div>
+            <div id="logs-container" class="terminal-logs">
+              <!-- Logs will stream here dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Info details for selected phase -->
+        <div class="info-panel">
+          <div class="info-content">
+            <h3 id="info-title">0. Kiến Trúc Tổng Thể</h3>
+            <p id="info-desc">Hệ thống Nova SpeakUp kết nối trực tiếp client (trình duyệt) qua Cloudflare Worker để đẩy luồng âm thanh thời gian thực lên máy chủ WebSocket của Tenclass. Toàn bộ tài khoản và cấu hình được đồng bộ thông qua Vercel API tới Google Sheets.</p>
+            
+            <div class="info-steps" id="info-steps-container">
+              <!-- Steps for selected flow -->
+            </div>
+          </div>
+          
+          <div class="code-references">
+            <div class="code-ref-title">Mã Nguồn Liên Quan</div>
+            <div class="file-tag-list" id="code-ref-files">
+              <!-- Files list -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Data structures containing information for each phase
+    const phases = {
+      overview: {
+        title: "0. Kiến Trúc Tổng Thể Hệ Thống",
+        desc: "Hệ thống tích hợp giữa Frontend SPA trên Vercel, các Serverless Endpoint, API dịch thuật bên ngoài, hệ thống lưu trữ đa nền tảng và cổng proxy WebSocket để truyền âm thanh thời gian thực.",
+        activeNodes: ['user', 'vercel', 'db', 'ai', 'cf', 'ws', 'device'],
+        activeLines: [
+          { id: 'path-user-vercel', color: 'var(--color-vercel)' },
+          { id: 'path-user-cf', color: 'var(--color-cf)' },
+          { id: 'path-vercel-db', color: 'var(--color-db)' },
+          { id: 'path-vercel-ai', color: 'var(--color-ai)' },
+          { id: 'path-vercel-ota', color: 'var(--color-vercel)' },
+          { id: 'path-cf-ws', color: 'var(--color-cf)' },
+          { id: 'path-ws-device', color: 'var(--cyan)' }
+        ],
+        steps: [
+          "Trình duyệt load static files từ Vercel qua domain blublaspeakup.io.vn.",
+          "Gọi API HTTP thông qua Express Backend chạy Serverless trên Vercel.",
+          "Thao tác dữ liệu qua db.js đồng bộ trực tiếp với các Cloud Database.",
+          "Truyền dữ liệu thoại Opus nén thời gian thực qua WebSockets thông qua proxy Cloudflare để vượt rào cản CORS/Headers của trình duyệt."
+        ],
+        files: [
+          { name: "server.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js" },
+          { name: "db.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/db.js" },
+          { name: "public/js/main.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/public/js/main.js" },
+          { name: "vercel.json", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/vercel.json" }
+        ]
+      },
+      login: {
+        title: "1. Luồng Xác Thực & Đồng Bộ DB",
+        desc: "Xử lý đăng nhập học viên và đồng bộ cấu hình. Khi đăng nhập thành công, hệ thống sẽ trả về cấu hình kết nối tương ứng của học viên được lưu trong CSDL (Google Sheets, Supabase hoặc MongoDB).",
+        activeNodes: ['user', 'vercel', 'db'],
+        activeLines: [
+          { id: 'path-user-vercel', color: 'var(--color-vercel)' },
+          { id: 'path-vercel-db', color: 'var(--color-db)' }
+        ],
+        steps: [
+          "Học viên điền thông tin và nhấn Đăng Nhập tại giao diện Browser.",
+          "Gửi request POST /api/auth/login lên Vercel Serverless Function.",
+          "db.js đọc dữ liệu từ Google Sheets (qua Apps Script) hoặc Supabase/MongoDB/JSON File.",
+          "Xác thực mật khẩu, trả về thông tin hiển thị (displayName, role, score) và toàn bộ cấu hình thiết bị đã gán cho học viên đó."
+        ],
+        files: [
+          { name: "server.js (auth/login)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L93" },
+          { name: "db.js (readUsers)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/db.js#L126" },
+          { name: "docs/google_sheets_script.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/docs/google_sheets_script.js" }
+        ]
+      },
+      lease: {
+        title: "2. Luồng Thuê & Heartbeat Thiết Bị Ảo",
+        desc: "Quản lý Pool thiết bị để phân chia các cấu hình thiết bị ảo không bị xung đột. Học viên sẽ gửi tín hiệu ping (Heartbeat) định kỳ để giữ chỗ thuê trong vòng 5 phút.",
+        activeNodes: ['user', 'vercel', 'db'],
+        activeLines: [
+          { id: 'path-user-vercel', color: 'var(--color-vercel)' },
+          { id: 'path-vercel-db', color: 'var(--color-db)' }
+        ],
+        steps: [
+          "Học viên nhấn Connect, trình duyệt gọi POST /api/pool/lease để xin thuê thiết bị.",
+          "Server truy vấn pools.json/Sheets tìm thiết bị kích hoạt và rảnh cho Chatbot ID đó.",
+          "Đánh dấu thuê: leased_to = username và trả cấu hình (MAC, Serial, HMAC) về cho Client.",
+          "Định kỳ 30 giây, client gửi heartbeat duy trì. Nếu không gửi trong 5 phút, server tự động giải phóng thiết bị."
+        ],
+        files: [
+          { name: "server.js (pool/lease)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L209" },
+          { name: "server.js (heartbeat)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L282" },
+          { name: "pools.json", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/pools.json" }
+        ]
+      },
+      websocket: {
+        title: "3. Luồng WebSocket Audio (Cloudflare Proxy)",
+        desc: "Trình duyệt không hỗ trợ gán Headers tùy chọn trong API WebSocket của Javascript. Hệ thống sử dụng một Cloudflare Worker Proxy để chèn headers như Device-Id, Client-Id, Authorization và pipe dữ liệu âm thanh Opus.",
+        activeNodes: ['user', 'cf', 'ws', 'device'],
+        activeLines: [
+          { id: 'path-user-cf', color: 'var(--color-cf)' },
+          { id: 'path-cf-ws', color: 'var(--color-cf)' },
+          { id: 'path-ws-device', color: 'var(--cyan)' }
+        ],
+        steps: [
+          "Trình duyệt mở kết nối WebSocket tới Cloudflare Worker kèm tham số target URL và các token xác thực trên query string.",
+          "CF Worker chèn Authorization Bearer và Device Headers rồi tạo socket upstream tới server Tenclass.",
+          "Khi được chấp thuận, CF Worker làm đường ống dẫn dữ liệu hai chiều nhị phân (Opus Audio Frames).",
+          "Trình duyệt ghi âm bằng Mic, nén Opus gửi lên Chatbot và giải mã gói tin audio nhận được từ Chatbot để phát ra Loa."
+        ],
+        files: [
+          { name: "public/js/protocol.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/public/js/protocol.js" },
+          { name: "cloudflare-ws-proxy/worker.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/cloudflare-ws-proxy/worker.js" },
+          { name: "public/js/audio.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/public/js/audio.js" }
+        ]
+      },
+      suggest: {
+        title: "4. Luồng AI Gợi Ý & Dịch Thuật",
+        desc: "API /api/suggest cung cấp các phản hồi tiếng Anh gợi ý kèm dịch tiếng Việt giúp người dùng học tập hiệu quả. Sử dụng dịch vụ Groq Cloud với mô hình LLaMA-3.1 và cơ chế tự động Fallback dự phòng.",
+        activeNodes: ['user', 'vercel', 'ai'],
+        activeLines: [
+          { id: 'path-user-vercel', color: 'var(--color-vercel)' },
+          { id: 'path-vercel-ai', color: 'var(--color-ai)' }
+        ],
+        steps: [
+          "Khi có hội thoại mới, client gửi mảng hội thoại (messages) lên POST /api/suggest.",
+          "Vercel Server nhận và chèn System Prompt định hướng học tập.",
+          "Gọi API Groq Cloud. Nếu model chính (llama-3.1-8b-instant) lỗi hoặc chạm Rate Limit, server tự động thử lại lần lượt với các mô hình dự phòng (llama-3.3-70b-versatile, llama3-8b, v.v...).",
+          "Trả kết quả JSON dạng suggestions gợi ý cho học viên ngay trên giao diện web."
+        ],
+        files: [
+          { name: "server.js (api/suggest)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L734" },
+          { name: "server.js (fetchGroqWithFallback)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L692" }
+        ]
+      }
+    };
+
+    // Initialize phase on load
+    let currentPhase = 'overview';
+    switchPhase('overview');
+
+    function switchPhase(phaseKey) {
+      currentPhase = phaseKey;
+      const data = phases[phaseKey];
+      
+      // Update sidebar buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtnIndex = Object.keys(phases).indexOf(phaseKey);
+      document.querySelectorAll('.tab-btn')[activeBtnIndex].classList.add('active');
+
+      // Update info panel
+      document.getElementById('info-title').innerText = data.title;
+      document.getElementById('info-desc').innerText = data.desc;
+
+      // Update steps list
+      const stepsContainer = document.getElementById('info-steps-container');
+      stepsContainer.innerHTML = '';
+      data.steps.forEach((step, idx) => {
+        const item = document.createElement('div');
+        item.className = 'step-item';
+        item.innerHTML = `
+          <div class="step-num">${idx + 1}</div>
+          <div class="step-text">${step}</div>
+        `;
+        stepsContainer.appendChild(item);
+      });
+
+      // Update code references
+      const codeContainer = document.getElementById('code-ref-files');
+      codeContainer.innerHTML = '';
+      data.files.forEach(file => {
+        const link = document.createElement('a');
+        link.className = 'file-tag';
+        link.href = file.path;
+        link.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          ${file.name}
+        `;
+        codeContainer.appendChild(link);
+      });
+
+      // Update visual SVG diagram state
+      // 1. Reset all nodes & lines to inactive
+      document.querySelectorAll('.node').forEach(node => node.classList.remove('active'));
+      document.querySelectorAll('.flow-line').forEach(line => {
+        line.classList.remove('active');
+        line.classList.remove('reverse');
+        line.style.stroke = 'rgba(255, 255, 255, 0.08)';
+      });
+
+      // 2. Activate specific nodes
+      data.activeNodes.forEach(nodeId => {
+        const nodeEl = document.getElementById(`node-${nodeId}`);
+        if (nodeEl) nodeEl.classList.add('active');
+      });
+
+      // 3. Activate specific lines
+      data.activeLines.forEach(line => {
+        const lineEl = document.getElementById(line.id);
+        if (lineEl) {
+          lineEl.classList.add('active');
+          lineEl.style.stroke = line.color;
+          lineEl.style.setProperty('--line-color', line.color);
+        }
+      });
+    }
+
+    // Interactive Node Click handling
+    function highlightNode(nodeId) {
+      if (isSimulating) return; // Don't interrupt simulation
+      
+      // Find matching phase or highlight manually
+      let foundPhase = null;
+      if (nodeId === 'db') foundPhase = 'login';
+      else if (nodeId === 'cf') foundPhase = 'websocket';
+      else if (nodeId === 'ai') foundPhase = 'suggest';
+      else if (nodeId === 'device') foundPhase = 'websocket';
+      
+      if (foundPhase) {
+        switchPhase(foundPhase);
+      }
+    }
+
+    // Simulation Runner Logic
+    let isSimulating = false;
+    let simTimeout = null;
+    const simBtn = document.getElementById('sim-btn');
+    const simDot = document.getElementById('sim-dot');
+    const simStatusText = document.getElementById('sim-status-text');
+    const terminal = document.getElementById('terminal');
+    const logsContainer = document.getElementById('logs-container');
+
+    function toggleSimulation() {
+      if (isSimulating) {
+        stopSimulation();
+      } else {
+        startSimulation();
+      }
+    }
+
+    function addLog(msg, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      
+      let msgClass = 'log-msg-info';
+      if (type === 'success') msgClass = 'log-msg-success';
+      if (type === 'warning') msgClass = 'log-msg-warning';
+      if (type === 'error') msgClass = 'log-msg-error';
+      if (type === 'packet') msgClass = 'log-msg-packet';
+
+      line.innerHTML = `
+        <span class="log-time">[${time}]</span>
+        <span class="${msgClass}">${msg}</span>
+      `;
+      logsContainer.appendChild(line);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function clearLogs() {
+      logsContainer.innerHTML = '';
+    }
+
+    function startSimulation() {
+      isSimulating = true;
+      simBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="16" height="16" fill="currentColor"/>
+        </svg>
+        Dừng mô phỏng
+      `;
+      simDot.classList.add('active');
+      terminal.classList.add('visible');
+      clearLogs();
+      addLog("Khởi động hệ thống giả lập Nova Session...", "info");
+      
+      runSimulationStep(1);
+    }
+
+    function stopSimulation() {
+      isSimulating = false;
+      clearTimeout(simTimeout);
+      simBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 3L19 12L5 21V3Z" fill="currentColor"/>
+        </svg>
+        Bắt đầu mô phỏng
+      `;
+      simDot.classList.remove('active');
+      simStatusText.innerText = "Đang rảnh (Idle)";
+      addLog("Đã tắt giả lập.", "warning");
+      
+      // Reset packet graphics
+      document.querySelectorAll('.packet').forEach(p => {
+        p.classList.remove('animating');
+        p.style.animation = 'none';
+      });
+      
+      // Go back to overview state
+      switchPhase('overview');
+    }
+
+    // Packet Motion Animation helper
+    function animatePacket(packetId, pathId, duration, color, callback) {
+      const pkt = document.getElementById(packetId);
+      const path = document.getElementById(pathId);
+      if (!pkt || !path) {
+        if (callback) callback();
+        return;
+      }
+
+      pkt.style.setProperty('--packet-color', color);
+      pkt.classList.add('animating');
+      
+      const totalLength = path.getTotalLength();
+      let start = null;
+
+      function step(timestamp) {
+        if (!isSimulating) return; // Halt animation if stopped
+        if (!start) start = timestamp;
+        const progress = (timestamp - start) / duration;
+
+        if (progress < 1) {
+          // Calculate point along path
+          const point = path.getPointAtLength(progress * totalLength);
+          pkt.setAttribute('cx', point.x);
+          pkt.setAttribute('cy', point.y);
+          requestAnimationFrame(step);
+        } else {
+          // Reached end
+          const endPoint = path.getPointAtLength(totalLength);
+          pkt.setAttribute('cx', endPoint.x);
+          pkt.setAttribute('cy', endPoint.y);
+          pkt.classList.remove('animating');
+          if (callback) callback();
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function runSimulationStep(stepNumber) {
+      if (!isSimulating) return;
+
+      switch(stepNumber) {
+        case 1:
+          switchPhase('login');
+          simStatusText.innerText = "Bước 1: Học viên đăng nhập...";
+          addLog("Học viên gửi yêu cầu đăng nhập với username 'quydong'...", "info");
+          
+          animatePacket('pkt-user-vercel', 'path-user-vercel', 1500, 'var(--color-vercel)', () => {
+            addLog("Vercel API nhận yêu cầu POST /api/auth/login. Kết nối DB...", "info");
+            
+            animatePacket('pkt-vercel-db', 'path-vercel-db', 1200, 'var(--color-db)', () => {
+              addLog("Google Sheets DB: Đọc dữ liệu thành công. Khớp tài khoản.", "success");
+              
+              // Reverse packet back to Vercel then to user
+              animatePacket('pkt-vercel-db', 'path-vercel-db', 1000, 'var(--color-db)', () => {
+                animatePacket('pkt-user-vercel', 'path-user-vercel', 1200, 'var(--color-vercel)', () => {
+                  addLog("Đăng nhập thành công! Trả về token và displayName: 'Quý Đông'", "success");
+                  
+                  simTimeout = setTimeout(() => runSimulationStep(2), 1500);
+                });
+              });
+            });
+          });
+          break;
+
+        case 2:
+          switchPhase('lease');
+          simStatusText.innerText = "Bước 2: Yêu cầu thuê thiết bị...";
+          addLog("Học viên nhấn Connect Chatbot 'Anna'. Yêu cầu cấp kết nối...", "info");
+          
+          animatePacket('pkt-user-vercel', 'path-user-vercel', 1500, 'var(--color-vercel)', () => {
+            addLog("Tìm thiết bị trong pool của chatbot_id: 'anna'...", "info");
+            
+            animatePacket('pkt-vercel-db', 'path-vercel-db', 1200, 'var(--color-db)', () => {
+              addLog("Đã tìm thấy thiết bị trống trong pool: MAC 24:0F:C7:AA:BB:CC", "success");
+              addLog("Lưu phiên thuê thành công (leased_to: quydong). Cấp phát HMAC key.", "success");
+              
+              animatePacket('pkt-user-vercel', 'path-user-vercel', 1500, 'var(--color-vercel)', () => {
+                addLog("Khởi chạy Heartbeat Ping định kỳ 30s để duy trì thiết bị.", "success");
+                
+                simTimeout = setTimeout(() => runSimulationStep(3), 1800);
+              });
+            });
+          });
+          break;
+
+        case 3:
+          switchPhase('websocket');
+          simStatusText.innerText = "Bước 3: Thiết lập WebSocket Audio...";
+          addLog("Trình duyệt khởi chạy kết nối WebSocket qua Cloudflare Proxy...", "info");
+          
+          animatePacket('pkt-user-cf', 'path-user-cf', 1800, 'var(--color-cf)', () => {
+            addLog("CF Worker nhận yêu cầu. Đóng gói Header chèn OAuth Token & MAC Address...", "info");
+            
+            animatePacket('pkt-cf-ws', 'path-cf-ws', 1200, 'var(--color-cf)', () => {
+              addLog("WebSocket Upstream được chấp nhận bởi server Tenclass.", "success");
+              addLog("Thiết lập luồng Audio Pipe thành công! Giao tiếp rảnh tay bắt đầu.", "success");
+              
+              simTimeout = setTimeout(() => runSimulationStep(4), 1800);
+            });
+          });
+          break;
+
+        case 4:
+          simStatusText.innerText = "Bước 4: Gửi luồng âm thanh...";
+          addLog("Gửi gói tin âm thanh (Giọng nói học viên: 'Hello, how is the weather today?')...", "packet");
+          
+          animatePacket('pkt-user-cf', 'path-user-cf', 1000, 'var(--cyan)', () => {
+            animatePacket('pkt-cf-ws', 'path-cf-ws', 800, 'var(--cyan)', () => {
+              animatePacket('pkt-ws-device', 'path-ws-device', 500, 'var(--cyan)', () => {
+                addLog("ESP32 Chatbot nhận dữ liệu Opus Audio. Bắt đầu tổng hợp phản hồi...", "info");
+                
+                // Response cycle
+                simTimeout = setTimeout(() => {
+                  addLog("Chatbot trả lời: 'The weather is warm and beautiful.' (Audio packet)...", "packet");
+                  animatePacket('pkt-ws-device', 'path-ws-device', 500, '#38bdf8', () => {
+                    animatePacket('pkt-cf-ws', 'path-cf-ws', 800, '#38bdf8', () => {
+                      animatePacket('pkt-user-cf', 'path-user-cf', 1000, '#38bdf8', () => {
+                        addLog("Giao diện nhận âm thanh, giải mã Opus và phát tiếng ra loa.", "success");
+                        
+                        simTimeout = setTimeout(() => runSimulationStep(5), 1800);
+                      });
+                    });
+                  });
+                }, 1500);
+              });
+            });
+          });
+          break;
+
+        case 5:
+          switchPhase('suggest');
+          simStatusText.innerText = "Bước 5: Lấy AI gợi ý câu trả lời...";
+          addLog("Đồng thời gửi đoạn hội thoại lên Vercel để xin câu gợi ý học tập...", "info");
+          
+          animatePacket('pkt-user-vercel', 'path-user-vercel', 1500, 'var(--color-vercel)', () => {
+            addLog("Vercel Server gửi payload prompt tới Groq Cloud API...", "info");
+            
+            animatePacket('pkt-vercel-ai', 'path-vercel-ai', 1200, 'var(--color-ai)', () => {
+              addLog("Groq Cloud (LLaMA-3.1): Trả về 3 câu gợi ý tiếng Anh kèm dịch tiếng Việt.", "success");
+              
+              animatePacket('pkt-user-vercel', 'path-user-vercel', 1500, 'var(--color-vercel)', () => {
+                addLog("Hiển thị gợi ý học tập lên khung Chat Suggestion: v.v...", "success");
+                
+                simTimeout = setTimeout(() => {
+                  addLog("==========================================", "info");
+                  addLog("Hoàn thành quy trình mô phỏng toàn luồng! Lặp lại sau 5s...", "success");
+                  simTimeout = setTimeout(() => runSimulationStep(1), 5000);
+                }, 1500);
+              });
+            });
+          });
+          break;
+      }
+    }
+  </script>
+</body>
+</html>
