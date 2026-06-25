@@ -905,7 +905,7 @@
     const phases = {
       overview: {
         title: "0. Kiến Trúc Tổng Thể Hệ Thống",
-        desc: "Hệ thống tích hợp giữa Frontend SPA trên Vercel, các Serverless Endpoint, API dịch thuật bên ngoài, hệ thống lưu trữ đa nền tảng và cổng proxy WebSocket để truyền âm thanh thời gian thực.",
+        desc: "Hệ thống tích hợp giữa Frontend Single Page Application (SPA), Vercel Serverless API, bộ lưu trữ đa cơ sở dữ liệu (db.js), API trí tuệ nhân tạo (Groq Cloud) và máy chủ âm thanh thời gian thực (Tenclass) thông qua Cloudflare WebSocket Proxy làm cầu nối trung gian.",
         activeNodes: ['user', 'vercel', 'db', 'ai', 'cf', 'ws', 'device'],
         activeLines: [
           { id: 'path-user-vercel', color: 'var(--color-vercel)' },
@@ -917,10 +917,10 @@
           { id: 'path-ws-device', color: 'var(--cyan)' }
         ],
         steps: [
-          "Trình duyệt load static files từ Vercel qua domain blublaspeakup.io.vn.",
-          "Gọi API HTTP thông qua Express Backend chạy Serverless trên Vercel.",
-          "Thao tác dữ liệu qua db.js đồng bộ trực tiếp với các Cloud Database.",
-          "Truyền dữ liệu thoại Opus nén thời gian thực qua WebSockets thông qua proxy Cloudflare để vượt rào cản CORS/Headers của trình duyệt."
+          "Browser tải tài nguyên tĩnh (HTML/CSS/JS) từ CDN Vercel thông qua tên miền blublaspeakup.io.vn.",
+          "Browser tương tác với Express Backend chạy dưới dạng Serverless Functions tại Vercel qua tiền tố đường dẫn /api/*.",
+          "Vercel Serverless Backend xử lý nghiệp vụ thông qua db.js, hỗ trợ tự động đồng bộ dữ liệu người dùng/thiết bị qua Google Sheets API, Supabase Database, MongoDB hoặc Local JSON dựa trên biến môi trường DB_TYPE.",
+          "Browser ghi âm giọng nói thô, mã hóa nén Opus và truyền tải gói tin nhị phân hai chiều qua WebSocket thông qua Cloudflare Worker để chèn Authorization Bearer & các Custom Headers trước khi đẩy tiếp lên máy chủ Chatbot."
         ],
         files: [
           { name: "server.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js" },
@@ -930,48 +930,48 @@
         ]
       },
       login: {
-        title: "1. Luồng Xác Thực & Đồng Bộ DB",
-        desc: "Xử lý đăng nhập học viên và đồng bộ cấu hình. Khi đăng nhập thành công, hệ thống sẽ trả về cấu hình kết nối tương ứng của học viên được lưu trong CSDL (Google Sheets, Supabase hoặc MongoDB).",
+        title: "1. Đăng Nhập & Đồng Bộ Cơ Sở Dữ Liệu",
+        desc: "Xử lý đăng nhập người dùng, phân quyền truy cập, hiển thị Leaderboard và tải thông tin cấu hình kết nối thiết bị. Đồng bộ động cấu trúc dữ liệu người dùng qua db.js.",
         activeNodes: ['user', 'vercel', 'db'],
         activeLines: [
           { id: 'path-user-vercel', color: 'var(--color-vercel)' },
           { id: 'path-vercel-db', color: 'var(--color-db)' }
         ],
         steps: [
-          "Học viên điền thông tin và nhấn Đăng Nhập tại giao diện Browser.",
-          "Gửi request POST /api/auth/login lên Vercel Serverless Function.",
-          "db.js đọc dữ liệu từ Google Sheets (qua Apps Script) hoặc Supabase/MongoDB/JSON File.",
-          "Xác thực mật khẩu, trả về thông tin hiển thị (displayName, role, score) và toàn bộ cấu hình thiết bị đã gán cho học viên đó."
+          "Yêu cầu Đăng Nhập: POST /api/auth/login với JSON payload: { username, password }.",
+          "Cấu trúc bảng users (Google Sheets/Supabase/Mongo): [Username, Password, DisplayName, Role, Score, ChatCount].",
+          "Khớp thông tin xác thực thành công sẽ tải tiếp dữ liệu từ bảng connections để tìm kiếm các bản ghi có khóa là 'username_chatbotId'. Mỗi kết nối chứa: { mac_address, serial_number, hmac_key }.",
+          "Trả về JSON Client: { username, displayName, role, score, chatCount, connections: { [connKey]: { mac_address, serial_number, hmac_key } } }."
         ],
         files: [
           { name: "server.js (auth/login)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L93" },
-          { name: "db.js (readUsers)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/db.js#L126" },
-          { name: "docs/google_sheets_script.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/docs/google_sheets_script.js" }
+          { name: "db.js (readUsers & readConnections)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/db.js#L126" },
+          { name: "docs/google_sheets_script.js (readUsers)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/docs/google_sheets_script.js#L45" }
         ]
       },
       lease: {
-        title: "2. Luồng Thuê & Heartbeat Thiết Bị Ảo",
-        desc: "Quản lý Pool thiết bị để phân chia các cấu hình thiết bị ảo không bị xung đột. Học viên sẽ gửi tín hiệu ping (Heartbeat) định kỳ để giữ chỗ thuê trong vòng 5 phút.",
+        title: "2. Thuê & Duy Trì Thiết Bị Trong Pool",
+        desc: "Học viên học trực tuyến sử dụng thiết bị ảo chung trong Pool để thực hiện phiên đàm thoại. Hệ thống thiết lập cơ chế lease (thuê) có thời hạn 5 phút và heartbeat duy trì nhằm tránh xung đột tranh giành thiết bị.",
         activeNodes: ['user', 'vercel', 'db'],
         activeLines: [
           { id: 'path-user-vercel', color: 'var(--color-vercel)' },
           { id: 'path-vercel-db', color: 'var(--color-db)' }
         ],
         steps: [
-          "Học viên nhấn Connect, trình duyệt gọi POST /api/pool/lease để xin thuê thiết bị.",
-          "Server truy vấn pools.json/Sheets tìm thiết bị kích hoạt và rảnh cho Chatbot ID đó.",
-          "Đánh dấu thuê: leased_to = username và trả cấu hình (MAC, Serial, HMAC) về cho Client.",
-          "Định kỳ 30 giây, client gửi heartbeat duy trì. Nếu không gửi trong 5 phút, server tự động giải phóng thiết bị."
+          "Học viên xin thuê thiết bị: POST /api/pool/lease gửi JSON: { username, chatbotId }.",
+          "Server kiểm tra pool thiết bị ảo (bảng pools có cấu trúc: [DeviceKey, ChatbotId, MacAddress, SerialNumber, HmacKey, Activated, LeasedTo, LeasedAt]). Nếu đã có thiết bị đang thuê chưa quá 5 phút, tự động gia hạn thuê và trả về.",
+          "Nếu chưa thuê, server tìm thiết bị có: activated = true và (leased_to = '' hoặc leased_at đã quá 5 phút). Thực hiện ghi nhận: leased_to = username, leased_at = Date.now().",
+          "Học viên gửi heartbeat duy trì định kỳ 30s: POST /api/pool/heartbeat { username, chatbotId, mac_address } để reset leased_at = Date.now()."
         ],
         files: [
           { name: "server.js (pool/lease)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L209" },
           { name: "server.js (heartbeat)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L282" },
-          { name: "pools.json", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/pools.json" }
+          { name: "pools.json (dữ liệu pool)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/pools.json" }
         ]
       },
       websocket: {
-        title: "3. Luồng WebSocket Audio (Cloudflare Proxy)",
-        desc: "Trình duyệt không hỗ trợ gán Headers tùy chọn trong API WebSocket của Javascript. Hệ thống sử dụng một Cloudflare Worker Proxy để chèn headers như Device-Id, Client-Id, Authorization và pipe dữ liệu âm thanh Opus.",
+        title: "3. WebSocket Audio (Cloudflare Proxy)",
+        desc: "Khởi tạo luồng truyền dẫn âm thanh nhị phân hai chiều. Sử dụng Cloudflare Worker Proxy để đóng gói và chèn các HTTP Headers xác thực đặc thù mà giao thức WebSocket của trình duyệt không hỗ trợ.",
         activeNodes: ['user', 'cf', 'ws', 'device'],
         activeLines: [
           { id: 'path-user-cf', color: 'var(--color-cf)' },
@@ -979,30 +979,30 @@
           { id: 'path-ws-device', color: 'var(--cyan)' }
         ],
         steps: [
-          "Trình duyệt mở kết nối WebSocket tới Cloudflare Worker kèm tham số target URL và các token xác thực trên query string.",
-          "CF Worker chèn Authorization Bearer và Device Headers rồi tạo socket upstream tới server Tenclass.",
-          "Khi được chấp thuận, CF Worker làm đường ống dẫn dữ liệu hai chiều nhị phân (Opus Audio Frames).",
-          "Trình duyệt ghi âm bằng Mic, nén Opus gửi lên Chatbot và giải mã gói tin audio nhận được từ Chatbot để phát ra Loa."
+          "Khởi tạo WebSocket: wss://xiaozhi-ws-proxy.workers.dev/?target=TARGET_WS_URL&token=TOKEN&device_id=MAC&client_id=CID.",
+          "Cloudflare Worker chặn yêu cầu, mở socket upstream tới TARGET_WS_URL và tiêm thêm các Header: Authorization (Bearer token), Device-Id (MAC), Client-Id, Protocol-Version (1).",
+          "Client bắt đầu gửi khung cấu hình khởi tạo (hello frame JSON): { type: 'hello', version: 1, transport: 'websocket', audio_params: { format: 'opus', sample_rate: 16000, channels: 1, frame_duration: 60 } } và nhận lại { type: 'hello', session_id: '...' }.",
+          "Luồng Voice Stream hoạt động: Trình duyệt ghi âm bằng Web Audio API, mã hóa nén Opus gửi lên dưới dạng gói tin binary (Uint8Array). Server Chatbot phản hồi nhị phân Opus, trình duyệt giải mã ngược sang PCM thô phát ra loa."
         ],
         files: [
-          { name: "public/js/protocol.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/public/js/protocol.js" },
-          { name: "cloudflare-ws-proxy/worker.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/cloudflare-ws-proxy/worker.js" },
-          { name: "public/js/audio.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/public/js/audio.js" }
+          { name: "public/js/protocol.js (XiaozhiProtocol)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/public/js/protocol.js#L15" },
+          { name: "cloudflare-ws-proxy/worker.js (Header Inject)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/cloudflare-ws-proxy/worker.js#L45" },
+          { name: "public/js/audio.js (Opus Codec)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/public/js/audio.js" }
         ]
       },
       suggest: {
-        title: "4. Luồng AI Gợi Ý & Dịch Thuật",
-        desc: "API /api/suggest cung cấp các phản hồi tiếng Anh gợi ý kèm dịch tiếng Việt giúp người dùng học tập hiệu quả. Sử dụng dịch vụ Groq Cloud với mô hình LLaMA-3.1 và cơ chế tự động Fallback dự phòng.",
+        title: "4. AI Phản Hồi Gợi Ý & Dịch Thuật",
+        desc: "API gợi ý thông minh (/api/suggest) và dịch song ngữ (/api/translate) tích hợp Groq AI LLaMA. Tự động áp dụng cơ chế tự phục hồi (Automatic Fallback Models) để đảm bảo trải nghiệm liên tục.",
         activeNodes: ['user', 'vercel', 'ai'],
         activeLines: [
           { id: 'path-user-vercel', color: 'var(--color-vercel)' },
           { id: 'path-vercel-ai', color: 'var(--color-ai)' }
         ],
         steps: [
-          "Khi có hội thoại mới, client gửi mảng hội thoại (messages) lên POST /api/suggest.",
-          "Vercel Server nhận và chèn System Prompt định hướng học tập.",
-          "Gọi API Groq Cloud. Nếu model chính (llama-3.1-8b-instant) lỗi hoặc chạm Rate Limit, server tự động thử lại lần lượt với các mô hình dự phòng (llama-3.3-70b-versatile, llama3-8b, v.v...).",
-          "Trả kết quả JSON dạng suggestions gợi ý cho học viên ngay trên giao diện web."
+          "Client gửi yêu cầu gợi ý: POST /api/suggest với JSON payload: { messages: [{role, content}], role, apiKey, model }.",
+          "Server thêm System Prompt yêu cầu Groq trả về JSON schema cố định: { suggestions: [{ en: 'suggestion', vi: 'translation' }] }.",
+          "Vercel Server gọi Groq Cloud qua fetchGroqWithFallback(). Bắt đầu bằng mô hình cấu hình (ví dụ: llama-3.1-8b-instant).",
+          "Nếu Groq trả về lỗi hoặc Rate Limit (ngoại trừ lỗi Key 401), server tự động thử lại tuần tự qua danh sách fallback: llama-3.3-70b-versatile, llama-3.1-8b-instant, llama3-8b-8192, llama3-70b-8192."
         ],
         files: [
           { name: "server.js (api/suggest)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L734" },
