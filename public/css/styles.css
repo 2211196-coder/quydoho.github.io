@@ -3386,17 +3386,120 @@ body.light-theme .global-btn.btn-connection:hover {
 body.light-theme .landing-view {
   background-image: var(--bg-gradient);
 }
+
+body.light-theme .global-brand-panel h1 {
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+body.light-theme .landing-hero {
+  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.04) 0%, transparent 70%);
+}
+
+body.light-theme .hero-badge {
+  background: rgba(139, 92, 246, 0.07);
+  border-color: rgba(139, 92, 246, 0.2);
+  color: var(--accent-dark);
+}
+
+body.light-theme .hero-title {
+  background: linear-gradient(135deg, #0f172a 30%, var(--accent-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+body.light-theme .hero-description {
+  color: #374151;
+}
+
+body.light-theme .btn-landing-cta {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
+}
+
+body.light-theme .btn-landing-cta:hover {
+  background: var(--accent-dark);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+}
+
+body.light-theme .section-tag {
+  color: var(--accent-dark);
+}
+
+body.light-theme .section-title {
+  color: #111827;
+}
+
+body.light-theme .section-desc {
+  color: #4b5563;
+}
+
 body.light-theme .landing-card-item {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
 }
+
 body.light-theme .landing-card-item:hover {
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border-color: rgba(139, 92, 246, 0.25);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.06);
 }
+
+body.light-theme .landing-card-item p {
+  color: #4b5563;
+}
+
+body.light-theme .feature-item h3 {
+  color: #111827;
+}
+
+body.light-theme .feature-item p {
+  color: #4b5563;
+}
+
 body.light-theme .landing-leaderboard-container {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
 }
+
 body.light-theme .landing-leaderboard-header {
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  color: #4b5563;
+}
+
+body.light-theme .landing-leaderboard-row {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  color: #111827;
+}
+
+body.light-theme .landing-leaderboard-row:hover {
+  background: rgba(0, 0, 0, 0.01);
+}
+
+body.light-theme .landing-leaderboard-row .rank-num-1 {
+  color: #d97706;
+  text-shadow: none;
+}
+
+body.light-theme .landing-leaderboard-row .rank-num-2 {
+  color: #4b5563;
+  text-shadow: none;
+}
+
+body.light-theme .landing-leaderboard-row .rank-num-3 {
+  color: #b45309;
+  text-shadow: none;
+}
+
+body.light-theme .landing-footer {
+  border-color: rgba(0, 0, 0, 0.06);
+  color: #6b7280;
 }
 
 /* Keyframes for fade in up animation */
