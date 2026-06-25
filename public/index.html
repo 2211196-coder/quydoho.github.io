@@ -302,6 +302,24 @@
         </header>
         
         <div class="settings-content">
+          <!-- Chat History Management -->
+          <section class="settings-section" id="chat-history-section">
+            <h2>💬 Lịch sử Trò chuyện</h2>
+            <p class="settings-desc">Quản lý lịch sử hội thoại của bạn với các Chatbot AI. Lịch sử được lưu trên trình duyệt của bạn.</p>
+            <div class="history-info" id="history-info-text">
+              <span class="history-info-icon">📊</span>
+              <span id="history-info-content">Đang tải thông tin...</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+              <button id="clear-current-history-btn" class="btn-secondary btn-danger-outline" style="width: 100%;">
+                🗑️ Xóa lịch sử Chatbot hiện tại
+              </button>
+              <button id="clear-all-history-btn" class="btn-secondary btn-danger-outline" style="width: 100%;">
+                🗑️ Xóa toàn bộ lịch sử trò chuyện
+              </button>
+            </div>
+          </section>
+
           <!-- API Configuration -->
           <section class="settings-section" id="api-settings-section" style="display: none;">
             <h2>Cấu hình Groq API & Backend</h2>

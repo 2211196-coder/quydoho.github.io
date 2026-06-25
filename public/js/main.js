@@ -256,6 +256,11 @@ class App {
       backendUrlInput: document.getElementById('backend-url-input'),
       saveApiSettingsBtn: document.getElementById('save-api-settings-btn'),
 
+      // Chat History management
+      clearCurrentHistoryBtn: document.getElementById('clear-current-history-btn'),
+      clearAllHistoryBtn: document.getElementById('clear-all-history-btn'),
+      historyInfoContent: document.getElementById('history-info-content'),
+
       // Suggestion sidebar
       suggestionSidebar: document.getElementById('suggestion-sidebar'),
       suggestionStatus: document.getElementById('suggestion-status'),
@@ -701,6 +706,7 @@ class App {
       this.$.settingsView.classList.remove('hidden');
       this.$.mainView.classList.add('hidden');
       this.$.activationView.classList.add('hidden');
+      this._updateHistoryInfo();
     } else {
       // Closing settings
       this.$.settingsView.classList.add('hidden');
@@ -710,6 +716,96 @@ class App {
         this.$.mainView.classList.remove('hidden');
       }
     }
+  }
+
+  _updateHistoryInfo() {
+    if (!this.$.historyInfoContent) return;
+    const username = this.currentUser ? this.currentUser.username.toLowerCase() : 'guest';
+    const chatbotName = CHATBOTS[this.currentChatbotId]?.displayName || this.currentChatbotId;
+    const currentKey = `xiaozhi_history_${username}_${this.currentChatbotId}`;
+    const currentHistory = JSON.parse(localStorage.getItem(currentKey) || '[]');
+    const currentCount = currentHistory.filter(m => m.role === 'user' || m.role === 'ai').length;
+
+    let totalCount = 0;
+    for (const id of Object.keys(CHATBOTS)) {
+      const key = `xiaozhi_history_${username}_${id}`;
+      const h = JSON.parse(localStorage.getItem(key) || '[]');
+      totalCount += h.filter(m => m.role === 'user' || m.role === 'ai').length;
+    }
+
+    this.$.historyInfoContent.innerHTML = `Chatbot <strong>${chatbotName}</strong>: <strong>${currentCount}</strong> tin nhắn &nbsp;|&nbsp; Tổng cộng: <strong>${totalCount}</strong> tin nhắn`;
+  }
+
+  _clearCurrentChatHistory() {
+    if (!this._clearCurrentConfirm) {
+      this._clearCurrentConfirm = true;
+      this.$.clearCurrentHistoryBtn.textContent = '⚠️ Bấm lần nữa để XÁC NHẬN XÓA';
+      this.$.clearCurrentHistoryBtn.classList.add('btn-confirm-danger');
+      this._clearCurrentTimer = setTimeout(() => {
+        this._clearCurrentConfirm = false;
+        this.$.clearCurrentHistoryBtn.textContent = '🗑️ Xóa lịch sử Chatbot hiện tại';
+        this.$.clearCurrentHistoryBtn.classList.remove('btn-confirm-danger');
+      }, 3000);
+      return;
+    }
+
+    clearTimeout(this._clearCurrentTimer);
+    this._clearCurrentConfirm = false;
+
+    const username = this.currentUser ? this.currentUser.username.toLowerCase() : 'guest';
+    const historyKey = `xiaozhi_history_${username}_${this.currentChatbotId}`;
+    localStorage.removeItem(historyKey);
+
+    const botConfig = CHATBOTS[this.currentChatbotId];
+    this.chatHistories[this.currentChatbotId] = [];
+    this.$.chatLog.innerHTML = '';
+    if (botConfig) {
+      this._addChat('ai', botConfig.greeting);
+    }
+
+    this.$.clearCurrentHistoryBtn.textContent = '✅ Đã xóa lịch sử!';
+    this.$.clearCurrentHistoryBtn.classList.remove('btn-confirm-danger');
+    this._updateHistoryInfo();
+    setTimeout(() => {
+      this.$.clearCurrentHistoryBtn.textContent = '🗑️ Xóa lịch sử Chatbot hiện tại';
+    }, 2000);
+  }
+
+  _clearAllChatHistory() {
+    if (!this._clearAllConfirm) {
+      this._clearAllConfirm = true;
+      this.$.clearAllHistoryBtn.textContent = '⚠️ Bấm lần nữa để XÁC NHẬN XÓA TẤT CẢ';
+      this.$.clearAllHistoryBtn.classList.add('btn-confirm-danger');
+      this._clearAllTimer = setTimeout(() => {
+        this._clearAllConfirm = false;
+        this.$.clearAllHistoryBtn.textContent = '🗑️ Xóa toàn bộ lịch sử trò chuyện';
+        this.$.clearAllHistoryBtn.classList.remove('btn-confirm-danger');
+      }, 3000);
+      return;
+    }
+
+    clearTimeout(this._clearAllTimer);
+    this._clearAllConfirm = false;
+
+    const username = this.currentUser ? this.currentUser.username.toLowerCase() : 'guest';
+    for (const id of Object.keys(CHATBOTS)) {
+      const historyKey = `xiaozhi_history_${username}_${id}`;
+      localStorage.removeItem(historyKey);
+      this.chatHistories[id] = [];
+    }
+
+    const botConfig = CHATBOTS[this.currentChatbotId];
+    this.$.chatLog.innerHTML = '';
+    if (botConfig) {
+      this._addChat('ai', botConfig.greeting);
+    }
+
+    this.$.clearAllHistoryBtn.textContent = '✅ Đã xóa toàn bộ lịch sử!';
+    this.$.clearAllHistoryBtn.classList.remove('btn-confirm-danger');
+    this._updateHistoryInfo();
+    setTimeout(() => {
+      this.$.clearAllHistoryBtn.textContent = '🗑️ Xóa toàn bộ lịch sử trò chuyện';
+    }, 2000);
   }
 
   /* [DISABLED] Biểu cảm - _resetEmojiMapping
@@ -1401,6 +1497,14 @@ class App {
     this.$.closeSettingsBtn.addEventListener('click', () => this._toggleSettings());
     // [DISABLED] this.$.saveEmojiBtn.addEventListener('click', () => this._saveEmojiMapping());
     // [DISABLED] this.$.resetEmojiBtn.addEventListener('click', () => this._resetEmojiMapping());
+
+    // Chat History management
+    if (this.$.clearCurrentHistoryBtn) {
+      this.$.clearCurrentHistoryBtn.addEventListener('click', () => this._clearCurrentChatHistory());
+    }
+    if (this.$.clearAllHistoryBtn) {
+      this.$.clearAllHistoryBtn.addEventListener('click', () => this._clearAllChatHistory());
+    }
 
     // Triple click to toggle hidden API configuration
     const settingsTitle = document.getElementById('settings-title');
