@@ -1694,9 +1694,6 @@ class App {
     }
   }
 
-  _toggleSettings() {
-    this.$.settingsView.classList.toggle('hidden');
-  }
 
   _toggleConnection() {
     this.$.connectionView.classList.toggle('hidden');
