@@ -677,6 +677,8 @@
       border-radius: 16px;
       padding: 1.25rem;
       transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
     }
     
     .glossary-card:hover {
@@ -689,10 +691,35 @@
       font-family: 'Space Grotesk', sans-serif;
       font-size: 1.05rem;
       font-weight: 600;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.25rem;
       display: flex;
       align-items: center;
       gap: 0.5rem;
+    }
+
+    .glossary-badge {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-top: 0.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .badge-used {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: #34d399;
+    }
+
+    .badge-virtual {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: #38bdf8;
     }
     
     .glossary-desc {
@@ -958,14 +985,16 @@
 
         <!-- Glossary / Definition Panel -->
         <div class="glossary-panel">
-          <h3 class="glossary-title">Giải Thích Thuật Ngữ Cốt Lõi (Dễ Hiểu)</h3>
+          <h3 class="glossary-title">Giải Thích Thuật Ngữ Cốt Lõi & Ứng Dụng Thực Tế</h3>
           <div class="glossary-grid">
             <div class="glossary-card">
               <div class="glossary-term">
                 <span style="color: var(--color-cf);">✦</span> Cloudflare Worker (CF Worker)
               </div>
+              <span class="glossary-badge badge-used">Có sử dụng trong dự án này</span>
               <div class="glossary-desc">
-                Là một dịch vụ máy chủ trung gian siêu tốc chạy ở các vị trí gần bạn nhất trên internet. Nó đóng vai trò như một <strong>"trạm trung chuyển bảo mật"</strong>: nhận luồng âm thanh từ Trình duyệt của học viên, chèn thêm mã xác thực bảo mật và chuyển tiếp trực tiếp lên máy chủ Tenclass nhằm tối ưu đường truyền và giảm độ trễ tối đa.
+                <strong>Định nghĩa:</strong> Là dịch vụ chạy mã nguồn serverless của Cloudflare chạy trên mạng lưới máy chủ toàn cầu.<br>
+                <strong>Ứng dụng thực tế:</strong> Vì chính sách bảo mật của các trình duyệt Web thông thường (như Chrome, Safari) không cho phép chèn các HTTP Header tùy biến (như <code>Authorization: Bearer</code>, <code>Device-Id</code>) trực tiếp khi khởi tạo kết nối <code>new WebSocket()</code>, dự án này đã triển khai một <strong>Cloudflare Worker proxy trung gian</strong>. Trình duyệt gửi Token và Device ID qua tham số URL (Query Parameters), Cloudflare Worker sẽ trích xuất chúng và chèn vào các HTTP Header tiêu chuẩn trước khi chuyển tiếp lên máy chủ WebSocket chính để xác thực thành công.
               </div>
             </div>
             
@@ -973,18 +1002,21 @@
               <div class="glossary-term">
                 <span style="color: var(--color-ws);">✦</span> Tenclass OTA & Server
               </div>
+              <span class="glossary-badge badge-used">Có sử dụng trong dự án này</span>
               <div class="glossary-desc">
-                <strong>Tenclass Server</strong> là máy chủ xử lý âm thanh AI, chịu trách nhiệm nhận tín hiệu giọng nói của bạn, chuyển sang AI để trả lời và gửi lại tệp âm thanh phản hồi.<br>
-                <strong>OTA (Over-The-Air)</strong> là công nghệ cập nhật phần mềm không dây từ xa. Thiết bị của bạn sẽ tự động kết nối Wi-Fi để tải bản cập nhật mới nhất từ Tenclass Server mà không cần cắm cáp kết nối vật lý vào máy tính.
+                <strong>Định nghĩa:</strong> <strong>Tenclass Server</strong> là máy chủ xử lý âm thanh AI trung tâm. <strong>OTA (Over-The-Air)</strong> là dịch vụ cho phép thiết bị phần cứng tải và cập nhật phiên bản phần mềm mới từ xa qua mạng Wi-Fi.<br>
+                <strong>Ứng dụng thực tế:</strong> Dự án này sử dụng dịch vụ của Tenclass rất tích cực. Khi học viên bấm nút <em>"Kết nối"</em> trên Web, hệ thống sẽ tự động gọi các API OTA của Tenclass (thông qua Proxy API <code>/api/ota</code> và <code>/api/activate</code> trên Vercel Backend) để bắt tay mã hóa HMAC-SHA256, kích hoạt thiết bị ảo và nhận về đường dẫn WebSocket chính chủ để đàm thoại âm thanh Opus thời gian thực.
               </div>
             </div>
             
             <div class="glossary-card">
               <div class="glossary-term">
-                <span style="color: #38bdf8;">✦</span> Thiết bị ESP32
+                <span style="color: #38bdf8;">✦</span> Thiết bị ESP32 (Vật lý & Thiết bị ảo)
               </div>
+              <span class="glossary-badge badge-virtual">Giả lập ảo trong dự án này</span>
               <div class="glossary-desc">
-                Là một chip xử lý máy tính cực kỳ nhỏ gọn tích hợp sẵn kết nối Wi-Fi và Bluetooth. Chip ESP32 này được gắn bên trong các loa đàm thoại AI tự lắp ráp, thực hiện chức năng thu giọng nói từ micro tích hợp, gửi dữ liệu lên máy chủ và phát giọng nói của chatbot AI ra loa ngoài.
+                <strong>Định nghĩa:</strong> Là chip xử lý máy tính cực nhỏ tích hợp Wi-Fi/Bluetooth, thường được nạp phần mềm mã nguồn mở để làm loa đàm thoại AI vật lý đặt tại nhà.<br>
+                <strong>Ứng dụng thực tế:</strong> Dự án này <strong>không dùng chip vật lý</strong> mà đóng vai trò là một <strong>"Thiết bị ảo" (Virtual Device Emulator)</strong> chạy trên trình duyệt. Trình duyệt thuê một bộ thông tin phần cứng giả lập (MAC Address, Serial Number, HMAC Key) được lưu trong <code>pools.json</code>, tự tạo chữ ký HMAC để bắt tay xác thực và nén/giải nén luồng âm thanh Opus gửi tới máy chủ Tenclass y hệt như một thiết bị ESP32 thật.
               </div>
             </div>
           </div>
