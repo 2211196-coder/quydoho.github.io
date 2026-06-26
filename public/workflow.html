@@ -669,42 +669,42 @@
     <div class="grid">
       <!-- Sidebar Control Panel -->
       <div class="sidebar">
-        <h2 class="section-title">Các Phân Hệ Data Flow</h2>
+        <h2 class="section-title">Cơ Chế Hoạt Động Hệ Thống</h2>
         
         <div class="tabs">
           <button class="tab-btn active" onclick="switchPhase('overview')">
             <span class="tab-btn-title">
-              <span style="color: var(--primary);">●</span> 0. Kiến Trúc Tổng Thể
+              <span style="color: var(--primary);">●</span> 0. Sơ Đồ Kết Nối Tổng Quan
             </span>
-            <span class="tab-btn-desc">Tổng quan kết nối phần cứng và máy chủ</span>
+            <span class="tab-btn-desc">Tổng quan đường truyền dữ liệu toàn hệ thống</span>
           </button>
           
           <button class="tab-btn" onclick="switchPhase('login')">
             <span class="tab-btn-title">
-              <span style="color: var(--color-db);">●</span> 1. Đăng nhập & Lưu trữ DB
+              <span style="color: var(--color-db);">●</span> 1. Đăng Nhập & Đồng Bộ Học Viên
             </span>
-            <span class="tab-btn-desc">Đồng bộ Sheets, Supabase, MongoDB</span>
+            <span class="tab-btn-desc">Đồng bộ điểm số Google Sheets và cấu hình kết nối</span>
           </button>
           
           <button class="tab-btn" onclick="switchPhase('lease')">
             <span class="tab-btn-title">
-              <span style="color: var(--color-vercel);">●</span> 2. Thuê & Heartbeat Thiết bị
+              <span style="color: var(--color-vercel);">●</span> 2. Cấp Phát & Tự Động Kết Nối
             </span>
-            <span class="tab-btn-desc">Quản lý pool thiết bị tránh xung đột</span>
+            <span class="tab-btn-desc">Tự động giữ kết nối thiết bị ảo tránh bị ngắt</span>
           </button>
           
           <button class="tab-btn" onclick="switchPhase('websocket')">
             <span class="tab-btn-title">
-              <span style="color: var(--color-cf);">●</span> 3. WebSocket Audio (Proxy)
+              <span style="color: var(--color-cf);">●</span> 3. Truyền Âm Thanh Thực Tế (Opus)
             </span>
-            <span class="tab-btn-desc">Cloudflare Worker inject Auth Headers</span>
+            <span class="tab-btn-desc">Gửi luồng voice stream Opus qua Cloudflare Worker</span>
           </button>
           
           <button class="tab-btn" onclick="switchPhase('suggest')">
             <span class="tab-btn-title">
-              <span style="color: var(--color-ai);">●</span> 4. AI Gợi ý & Dịch thuật
+              <span style="color: var(--color-ai);">●</span> 4. Trợ Lý AI Gợi Ý & Dịch Thuật
             </span>
-            <span class="tab-btn-desc">API Proxy tới Groq với cơ chế Fallback</span>
+            <span class="tab-btn-desc">Gợi ý câu tiếng Anh, tự động dùng AI dự phòng</span>
           </button>
         </div>
 
@@ -752,19 +752,19 @@
             <path id="path-user-vercel" class="flow-line" d="M190 220 L300 220" marker-end="url(#arrow)"/>
             
             <!-- 2. Browser <--> Cloudflare WS Proxy -->
-            <path id="path-user-cf" class="flow-line" d="M190 240 L380 320" marker-end="url(#arrow)"/>
+            <path id="path-user-cf" class="flow-line" d="M190 240 L300 340" marker-end="url(#arrow)"/>
             
             <!-- 3. Vercel <--> Databases -->
             <path id="path-vercel-db" class="flow-line" d="M360 170 L360 85" marker-end="url(#arrow)"/>
             
             <!-- 4. Vercel <--> Groq AI -->
-            <path id="path-vercel-ai" class="flow-line" d="M420 185 L560 105" marker-end="url(#arrow)"/>
+            <path id="path-vercel-ai" class="flow-line" d="M420 185 L570 105" marker-end="url(#arrow)"/>
             
             <!-- 5. Vercel <--> Tenclass OTA -->
             <path id="path-vercel-ota" class="flow-line" d="M420 220 L570 220" marker-end="url(#arrow)"/>
             
             <!-- 6. Cloudflare WS Proxy <--> Tenclass WebSocket -->
-            <path id="path-cf-ws" class="flow-line" d="M480 340 L570 340" marker-end="url(#arrow)"/>
+            <path id="path-cf-ws" class="flow-line" d="M420 340 L570 340" marker-end="url(#arrow)"/>
             
             <!-- 7. Tenclass WebSocket <--> ESP32 Chatbot (Hardware) -->
             <path id="path-ws-device" class="flow-line" d="M680 340 L710 340" marker-end="url(#arrow)"/>
@@ -818,11 +818,11 @@
 
             <!-- NODE 4: Groq AI -->
             <g id="node-ai" class="node" onclick="highlightNode('ai')" style="--node-color: var(--color-ai); --node-glow: rgba(168, 85, 247, 0.4); --node-glow-color: rgba(168, 85, 247, 0.1);">
-              <rect class="node-bg" x="560" y="55" width="130" height="70" rx="14"/>
+              <rect class="node-bg" x="570" y="55" width="110" height="70" rx="14"/>
               <!-- Brain icon -->
-              <path d="M580 95c0-8 6-12 12-12s9 4 9 9v3m0-12c0-8 6-12 12-12s9 4 9 9v3" stroke="#a855f7" stroke-width="2" stroke-linecap="round" fill="none"/>
-              <circle cx="600" cy="85" r="2" fill="#a855f7"/>
-              <circle cx="615" cy="80" r="2" fill="#a855f7"/>
+              <path d="M590 95c0-8 6-12 12-12s9 4 9 9v3m0-12c0-8 6-12 12-12s9 4 9 9v3" stroke="#a855f7" stroke-width="2" stroke-linecap="round" fill="none"/>
+              <circle cx="610" cy="85" r="2" fill="#a855f7"/>
+              <circle cx="625" cy="80" r="2" fill="#a855f7"/>
               
               <text class="node-text-title" x="625" y="105" text-anchor="middle">Groq API</text>
               <text class="node-text-sub" x="625" y="117" text-anchor="middle">LLaMA Models</text>
@@ -830,12 +830,12 @@
 
             <!-- NODE 5: Cloudflare WS Proxy -->
             <g id="node-cf" class="node" onclick="highlightNode('cf')" style="--node-color: var(--color-cf); --node-glow: rgba(249, 115, 22, 0.4); --node-glow-color: rgba(249, 115, 22, 0.1);">
-              <rect class="node-bg" x="380" y="305" width="100" height="70" rx="14"/>
+              <rect class="node-bg" x="300" y="305" width="120" height="70" rx="14"/>
               <!-- Cloud icon -->
-              <path d="M420 325a5 5 0 018 3 4 4 0 015 6h-16a4 4 0 013-9z" fill="#f97316"/>
+              <path d="M354 325a5 5 0 018 3 4 4 0 015 6h-16a4 4 0 013-9z" fill="#f97316"/>
               
-              <text class="node-text-title" x="430" y="352" text-anchor="middle">CF Worker</text>
-              <text class="node-text-sub" x="430" y="364" text-anchor="middle">WS Header Inject</text>
+              <text class="node-text-title" x="360" y="352" text-anchor="middle">CF Worker</text>
+              <text class="node-text-sub" x="360" y="364" text-anchor="middle">WS Header Inject</text>
             </g>
 
             <!-- NODE 6: Tenclass WS Server -->
@@ -904,8 +904,8 @@
     // Data structures containing information for each phase
     const phases = {
       overview: {
-        title: "0. Kiến Trúc Tổng Thể Hệ Thống",
-        desc: "Hệ thống tích hợp giữa Frontend Single Page Application (SPA), Vercel Serverless API, bộ lưu trữ đa cơ sở dữ liệu (db.js), API trí tuệ nhân tạo (Groq Cloud) và máy chủ âm thanh thời gian thực (Tenclass) thông qua Cloudflare WebSocket Proxy làm cầu nối trung gian.",
+        title: "0. Sơ Đồ Hoạt Động Tổng Quan",
+        desc: "Tổng quan đường truyền dữ liệu toàn hệ thống: Từ trình duyệt học viên gửi âm thanh qua Cloudflare Worker để chuyển tiếp lên máy chủ Tenclass, đồng thời lưu trữ điểm số/cấu hình qua Google Sheets và tạo gợi ý học tập bằng trí tuệ nhân tạo Groq AI.",
         activeNodes: ['user', 'vercel', 'db', 'ai', 'cf', 'ws', 'device'],
         activeLines: [
           { id: 'path-user-vercel', color: 'var(--color-vercel)' },
@@ -917,10 +917,10 @@
           { id: 'path-ws-device', color: 'var(--cyan)' }
         ],
         steps: [
-          "Browser tải tài nguyên tĩnh (HTML/CSS/JS) từ CDN Vercel thông qua tên miền blublaspeakup.io.vn.",
-          "Browser tương tác với Express Backend chạy dưới dạng Serverless Functions tại Vercel qua tiền tố đường dẫn /api/*.",
-          "Vercel Serverless Backend xử lý nghiệp vụ thông qua db.js, hỗ trợ tự động đồng bộ dữ liệu người dùng/thiết bị qua Google Sheets API, Supabase Database, MongoDB hoặc Local JSON dựa trên biến môi trường DB_TYPE.",
-          "Browser ghi âm giọng nói thô, mã hóa nén Opus và truyền tải gói tin nhị phân hai chiều qua WebSocket thông qua Cloudflare Worker để chèn Authorization Bearer & các Custom Headers trước khi đẩy tiếp lên máy chủ Chatbot."
+          "Trình duyệt tải giao diện ứng dụng từ máy chủ lưu trữ (Vercel Hosting) qua tên miền blublaspeakup.io.vn.",
+          "Trình duyệt kết nối với Vercel Backend để xử lý các yêu cầu đăng nhập, tính điểm số nói tiếng Anh và liên kết thiết bị.",
+          "Vercel Backend tự động ghi và đọc dữ liệu (học viên, lịch sử, điểm số) đồng bộ hai chiều trực tiếp với Google Sheets.",
+          "Khi học viên luyện nói, âm thanh từ micro được nén lại và truyền tải dạng tín hiệu số cực nhanh qua WebSocket thông qua Cloudflare Worker để đẩy lên máy chủ đàm thoại."
         ],
         files: [
           { name: "server.js", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js" },
@@ -930,18 +930,18 @@
         ]
       },
       login: {
-        title: "1. Đăng Nhập & Đồng Bộ Cơ Sở Dữ Liệu",
-        desc: "Xử lý đăng nhập người dùng, phân quyền truy cập, hiển thị Leaderboard và tải thông tin cấu hình kết nối thiết bị. Đồng bộ động cấu trúc dữ liệu người dùng qua db.js.",
+        title: "1. Đăng Nhập & Đồng Bộ Học Viên",
+        desc: "Xác thực tài khoản đăng nhập của học viên, tự động đồng bộ điểm số nói tiếng Anh tích lũy trực tiếp từ Google Sheets và tải thông tin kết nối thiết bị đã liên kết.",
         activeNodes: ['user', 'vercel', 'db'],
         activeLines: [
           { id: 'path-user-vercel', color: 'var(--color-vercel)' },
           { id: 'path-vercel-db', color: 'var(--color-db)' }
         ],
         steps: [
-          "Yêu cầu Đăng Nhập: POST /api/auth/login với JSON payload: { username, password }.",
-          "Cấu trúc bảng users (Google Sheets/Supabase/Mongo): [Username, Password, DisplayName, Role, Score, ChatCount].",
-          "Khớp thông tin xác thực thành công sẽ tải tiếp dữ liệu từ bảng connections để tìm kiếm các bản ghi có khóa là 'username_chatbotId'. Mỗi kết nối chứa: { mac_address, serial_number, hmac_key }.",
-          "Trả về JSON Client: { username, displayName, role, score, chatCount, connections: { [connKey]: { mac_address, serial_number, hmac_key } } }."
+          "Học viên nhập tài khoản và mật khẩu gửi tới máy chủ qua API xác thực: POST /api/auth/login.",
+          "Máy chủ đọc danh sách học viên từ cơ sở dữ liệu (tự động đồng bộ và lấy trực tiếp từ Google Sheets).",
+          "Sau khi đăng nhập đúng, hệ thống tiếp tục đọc dữ liệu cấu hình thiết bị kết nối đã lưu của học viên này.",
+          "Đồng bộ thông tin và trả về giao diện: Tên hiển thị, vai trò (admin/user), điểm số nói hiện tại và cấu hình kết nối thiết bị."
         ],
         files: [
           { name: "server.js (auth/login)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L93" },
@@ -950,18 +950,18 @@
         ]
       },
       lease: {
-        title: "2. Thuê & Duy Trì Thiết Bị Trong Pool",
-        desc: "Học viên học trực tuyến sử dụng thiết bị ảo chung trong Pool để thực hiện phiên đàm thoại. Hệ thống thiết lập cơ chế lease (thuê) có thời hạn 5 phút và heartbeat duy trì nhằm tránh xung đột tranh giành thiết bị.",
+        title: "2. Cấp Phát & Tự Động Kết Nối Thiết Bị",
+        desc: "Quản lý thiết bị ảo (Virtual Device) chung trong Pool. Tự động cấp phát quyền sử dụng cho mỗi học viên tối đa 5 phút và liên tục gửi tín hiệu giữ kết nối (Heartbeat) để tránh bị timeout.",
         activeNodes: ['user', 'vercel', 'db'],
         activeLines: [
           { id: 'path-user-vercel', color: 'var(--color-vercel)' },
           { id: 'path-vercel-db', color: 'var(--color-db)' }
         ],
         steps: [
-          "Học viên xin thuê thiết bị: POST /api/pool/lease gửi JSON: { username, chatbotId }.",
-          "Server kiểm tra pool thiết bị ảo (bảng pools có cấu trúc: [DeviceKey, ChatbotId, MacAddress, SerialNumber, HmacKey, Activated, LeasedTo, LeasedAt]). Nếu đã có thiết bị đang thuê chưa quá 5 phút, tự động gia hạn thuê và trả về.",
-          "Nếu chưa thuê, server tìm thiết bị có: activated = true và (leased_to = '' hoặc leased_at đã quá 5 phút). Thực hiện ghi nhận: leased_to = username, leased_at = Date.now().",
-          "Học viên gửi heartbeat duy trì định kỳ 30s: POST /api/pool/heartbeat { username, chatbotId, mac_address } để reset leased_at = Date.now()."
+          "Khi học viên bắt đầu kết nối chatbot, hệ thống gửi yêu cầu thuê thiết bị ảo còn trống: POST /api/pool/lease.",
+          "Máy chủ kiểm tra danh sách thiết bị ảo (Pool). Nếu học viên đã thuê thiết bị trước đó và chưa quá 5 phút, tự động gia hạn thời gian thuê.",
+          "Nếu chưa thuê, server tìm thiết bị ảo trống (chưa có ai sử dụng hoặc đã hết hạn thuê 5 phút) để cấp phát cho học viên.",
+          "Giao diện gửi tín hiệu Heartbeat đều đặn mỗi 30 giây: POST /api/pool/heartbeat để giữ thiết bị không bị ngắt kết nối giữa chừng."
         ],
         files: [
           { name: "server.js (pool/lease)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L209" },
@@ -970,8 +970,8 @@
         ]
       },
       websocket: {
-        title: "3. WebSocket Audio (Cloudflare Proxy)",
-        desc: "Khởi tạo luồng truyền dẫn âm thanh nhị phân hai chiều. Sử dụng Cloudflare Worker Proxy để đóng gói và chèn các HTTP Headers xác thực đặc thù mà giao thức WebSocket của trình duyệt không hỗ trợ.",
+        title: "3. Truyền Nhận Âm Thanh Thời Gian Thực (Voice Stream)",
+        desc: "Thiết lập đường truyền âm thanh trực tiếp hai chiều cực nhanh (Voice Stream) sử dụng WebSocket thông qua Cloudflare Worker để chèn mã xác thực bảo mật trước khi truyền lên máy chủ âm thanh.",
         activeNodes: ['user', 'cf', 'ws', 'device'],
         activeLines: [
           { id: 'path-user-cf', color: 'var(--color-cf)' },
@@ -979,10 +979,10 @@
           { id: 'path-ws-device', color: 'var(--cyan)' }
         ],
         steps: [
-          "Khởi tạo WebSocket: wss://xiaozhi-ws-proxy.workers.dev/?target=TARGET_WS_URL&token=TOKEN&device_id=MAC&client_id=CID.",
-          "Cloudflare Worker chặn yêu cầu, mở socket upstream tới TARGET_WS_URL và tiêm thêm các Header: Authorization (Bearer token), Device-Id (MAC), Client-Id, Protocol-Version (1).",
-          "Client bắt đầu gửi khung cấu hình khởi tạo (hello frame JSON): { type: 'hello', version: 1, transport: 'websocket', audio_params: { format: 'opus', sample_rate: 16000, channels: 1, frame_duration: 60 } } và nhận lại { type: 'hello', session_id: '...' }.",
-          "Luồng Voice Stream hoạt động: Trình duyệt ghi âm bằng Web Audio API, mã hóa nén Opus gửi lên dưới dạng gói tin binary (Uint8Array). Server Chatbot phản hồi nhị phân Opus, trình duyệt giải mã ngược sang PCM thô phát ra loa."
+          "Trình duyệt mở kết nối âm thanh WebSocket trung gian qua Cloudflare Worker proxy.",
+          "Cloudflare Worker chặn kết nối, tự động chèn thêm mã xác thực bảo mật (Authorization Token) và thông tin thiết bị (MAC Address).",
+          "Trình duyệt gửi gói tin bắt đầu hội thoại định cấu hình chuẩn nén âm thanh Opus chất lượng cao (16kHz, mono).",
+          "Micro thu tiếng học viên nói, nén Opus gửi lên nhị phân. Máy chủ Tenclass phản hồi lại gói tin âm thanh Opus nhị phân, trình duyệt giải nén phát ra loa."
         ],
         files: [
           { name: "public/js/protocol.js (XiaozhiProtocol)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/public/js/protocol.js#L15" },
@@ -991,18 +991,18 @@
         ]
       },
       suggest: {
-        title: "4. AI Phản Hồi Gợi Ý & Dịch Thuật",
-        desc: "API gợi ý thông minh (/api/suggest) và dịch song ngữ (/api/translate) tích hợp Groq AI LLaMA. Tự động áp dụng cơ chế tự phục hồi (Automatic Fallback Models) để đảm bảo trải nghiệm liên tục.",
+        title: "4. Trợ Lý AI Gợi Ý Câu Nói & Dịch Thuật",
+        desc: "Trí tuệ nhân tạo (AI LLaMA từ Groq Cloud) tự động phân tích ngữ cảnh hội thoại để gợi ý 3-5 câu phản xạ tiếng Anh kèm dịch nghĩa tiếng Việt phù hợp. Tự động chuyển đổi mô hình dự phòng ngay lập tức khi xảy ra lỗi.",
         activeNodes: ['user', 'vercel', 'ai'],
         activeLines: [
           { id: 'path-user-vercel', color: 'var(--color-vercel)' },
           { id: 'path-vercel-ai', color: 'var(--color-ai)' }
         ],
         steps: [
-          "Client gửi yêu cầu gợi ý: POST /api/suggest với JSON payload: { messages: [{role, content}], role, apiKey, model }.",
-          "Server thêm System Prompt yêu cầu Groq trả về JSON schema cố định: { suggestions: [{ en: 'suggestion', vi: 'translation' }] }.",
-          "Vercel Server gọi Groq Cloud qua fetchGroqWithFallback(). Bắt đầu bằng mô hình cấu hình (ví dụ: llama-3.1-8b-instant).",
-          "Nếu Groq trả về lỗi hoặc Rate Limit (ngoại trừ lỗi Key 401), server tự động thử lại tuần tự qua danh sách fallback: llama-3.3-70b-versatile, llama-3.1-8b-instant, llama3-8b-8192, llama3-70b-8192."
+          "Khi học viên bí từ, hệ thống gửi toàn bộ lịch sử trò chuyện lên server: POST /api/suggest.",
+          "Server thêm yêu cầu (System Prompt) bắt buộc Groq AI phản hồi về đúng cấu trúc câu gợi ý tiếng Anh kèm dịch nghĩa tiếng Việt.",
+          "Server gọi API Groq thông qua cơ chế tự phục hồi lỗi fetchGroqWithFallback(), bắt đầu từ mô hình chính (llama-3.1-8b).",
+          "Nếu mô hình chính bị nghẽn mạng hoặc quá lượt gọi (Rate Limit), hệ thống tự chuyển đổi tuần tự qua mô hình dự phòng (llama-3.3-70b, llama3-8b, llama3-70b)."
         ],
         files: [
           { name: "server.js (api/suggest)", path: "file:///c:/Users/quydo/Downloads/xiaozhi-web%202/xiaozhi-web/server.js#L734" },
