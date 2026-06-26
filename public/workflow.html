@@ -1346,7 +1346,7 @@
         case 1:
           switchPhase('login');
           simStatusText.innerText = "Bước 1: Học viên đăng nhập...";
-          addLog("Học viên gửi yêu cầu đăng nhập với username 'quydong'...", "info");
+          addLog("Học viên gửi yêu cầu đăng nhập với username 'user_test'...", "info");
           
           animatePacket('pkt-user-vercel', 'path-user-vercel', 1500, 'var(--color-vercel)', () => {
             addLog("Vercel API nhận yêu cầu POST /api/auth/login. Kết nối DB...", "info");
@@ -1376,7 +1376,7 @@
             
             animatePacket('pkt-vercel-db', 'path-vercel-db', 1200, 'var(--color-db)', () => {
               addLog("Đã tìm thấy thiết bị trống trong pool: MAC 24:0F:C7:AA:BB:CC", "success");
-              addLog("Lưu phiên thuê thành công (leased_to: quydong). Cấp phát HMAC key.", "success");
+              addLog("Lưu phiên thuê thành công (leased_to: user_test). Cấp phát HMAC key.", "success");
               
               animatePacket('pkt-user-vercel', 'path-user-vercel', 1500, 'var(--color-vercel)', () => {
                 addLog("Khởi chạy Heartbeat Ping định kỳ 30s để duy trì thiết bị.", "success");
