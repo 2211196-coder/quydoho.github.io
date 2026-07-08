@@ -12,6 +12,12 @@ const FRAME_DURATION = 60;
 const INPUT_SAMPLE_RATE = 16000;
 const CHANNELS = 1;
 
+// Keepalive constants
+const PING_BYTE = 0x00;
+const PONG_BYTE = 0x01;
+const KEEPALIVE_INTERVAL_MS = 25000;   // Send ping every 25 seconds
+const HEALTH_TIMEOUT_MS = 65000;       // Consider dead if no activity for 65 seconds
+
 export class XiaozhiProtocol {
   constructor() {
     this.ws = null;
@@ -21,6 +27,11 @@ export class XiaozhiProtocol {
     this._deviceId = '';
     this._clientId = '';
     this._token = '';
+
+    // Keepalive state
+    this._keepAliveTimer = null;
+    this._healthCheckTimer = null;
+    this.lastActivityAt = 0;  // Timestamp of last received message (any type)
 
     // Callbacks
     this.onJson = null;
@@ -116,9 +127,20 @@ export class XiaozhiProtocol {
         };
 
         this.ws.onmessage = (event) => {
+          // Track activity for health monitoring
+          this.lastActivityAt = Date.now();
+
           if (event.data instanceof ArrayBuffer) {
-            if (this.onAudio) this.onAudio(new Uint8Array(event.data));
+            const bytes = new Uint8Array(event.data);
+            // Check for keepalive pong response (1 byte = 0x01)
+            if (bytes.length === 1 && bytes[0] === PONG_BYTE) {
+              // Pong received — connection is alive at proxy level, no further action needed
+              return;
+            }
+            this.lastServerActivityAt = Date.now();
+            if (this.onAudio) this.onAudio(bytes);
           } else {
+            this.lastServerActivityAt = Date.now();
             try {
               const data = JSON.parse(event.data);
               console.log('[WS] JSON:', data.type);
@@ -194,6 +216,7 @@ export class XiaozhiProtocol {
   close() {
     this._isClosing = true;
     this.connected = false;
+    this.stopKeepAlive();
     if (this.ws) {
       try {
         this.ws.onopen = null;
@@ -205,6 +228,68 @@ export class XiaozhiProtocol {
       this.ws = null;
     }
     this._isClosing = false;
+  }
+
+  // ─── Keepalive Ping/Pong ─────────────────────
+
+  /**
+   * Start sending periodic binary pings to keep the connection alive.
+   * The Cloudflare Worker proxy intercepts these and replies with pong.
+   * Also starts a health check timer that monitors lastActivityAt.
+   */
+  startKeepAlive() {
+    this.stopKeepAlive();
+    this.lastActivityAt = Date.now();
+    this.lastPongTime = Date.now();
+    this.lastServerActivityAt = Date.now();
+
+    // Send binary ping every 25 seconds
+    this._keepAliveTimer = setInterval(() => {
+      if (this.isOpen) {
+        try {
+          // Send 1-byte ping for Cloudflare worker interception (health check pong)
+          this.ws.send(new Uint8Array([PING_BYTE]).buffer);
+
+          // Check proxy health
+          if (Date.now() - this.lastPongTime > HEALTH_TIMEOUT_MS) {
+            console.warn('[WS] Proxy health check failed, closing connection');
+            this.close();
+            return;
+          }
+
+          // Check server idle state (zombie connection prevention)
+          if (Date.now() - this.lastServerActivityAt > 55000) {
+            console.warn('[WS] Server idle timeout (55s), proactively closing to prevent zombie state');
+            this.close();
+          }
+        } catch (e) {
+          console.error('[WS] Ping send error:', e);
+        }
+      }
+    }, KEEPALIVE_INTERVAL_MS);
+
+    // Health check: if no activity for 65 seconds, force close
+    this._healthCheckTimer = setInterval(() => {
+      if (!this.connected) return;
+      const elapsed = Date.now() - this.lastActivityAt;
+      if (elapsed > HEALTH_TIMEOUT_MS) {
+        console.error(`[WS] No activity for ${Math.round(elapsed / 1000)}s — connection presumed dead, closing.`);
+        try { this.ws.close(4000, 'keepalive timeout'); } catch {}
+      }
+    }, 15000); // Check every 15 seconds
+
+    console.log('[WS] Keepalive started (ping every 25s, health check every 15s)');
+  }
+
+  stopKeepAlive() {
+    if (this._keepAliveTimer) {
+      clearInterval(this._keepAliveTimer);
+      this._keepAliveTimer = null;
+    }
+    if (this._healthCheckTimer) {
+      clearInterval(this._healthCheckTimer);
+      this._healthCheckTimer = null;
+    }
   }
 
   get isOpen() {

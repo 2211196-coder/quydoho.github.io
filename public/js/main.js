@@ -10,7 +10,7 @@ import { AudioPipeline } from './audio.js';
 import { ActivationManager } from './activation.js';
 
 // ─── Configuration ───────────────────────────────
-const WS_PROXY_URL = 'wss://xiaozhi-ws-proxy.kdcdigibots.workers.dev/';
+const WS_PROXY_URL = 'wss://xiaozhi-ws-proxy.blublaspeakup.workers.dev/';
 
 // Intercept fetch to automatically fallback to Vercel production backend if the request returns non-JSON (like HTML 404) or fails.
 const originalFetch = window.fetch;
@@ -200,6 +200,7 @@ class App {
     this.reconnectTimeout = null;
     this.heartbeatInterval = null;
     this.reconnectAttempts = 0;
+    this._isOffline = !navigator.onLine; // Track network status
 
     this.$ = {
       app: document.getElementById('app'),
@@ -221,6 +222,7 @@ class App {
       inlineSuggestionContent: document.getElementById('inline-suggestion-content'),
       reloadSuggestionBtn: document.getElementById('reload-suggestion-btn'),
       toggleSuggestionBtn: document.getElementById('toggle-suggestion-btn'),
+      mobileSuggestionChips: document.getElementById('mobile-suggestion-chips'),
       drawerTransBtn: document.getElementById('drawer-trans-btn'),
       drawerRankBtn: document.getElementById('drawer-rank-btn'),
       chatbotList: document.getElementById('chatbot-list'),
@@ -344,6 +346,11 @@ class App {
       profileRank: document.getElementById('profile-rank'),
       profileScore: document.getElementById('profile-score'),
       profileProgress: document.getElementById('profile-progress'),
+      mobileProfileBadge: document.getElementById('mobile-profile-badge'),
+      mobileProfileUsername: document.getElementById('mobile-profile-username'),
+      mobileProfileRank: document.getElementById('mobile-profile-rank'),
+      mobileProfileScore: document.getElementById('mobile-profile-score'),
+      mobileProfileProgress: document.getElementById('mobile-profile-progress'),
 
       // Sidebar tabs
       sidebarTabBtns: document.querySelectorAll('.sidebar-tab'),
@@ -480,6 +487,7 @@ class App {
       vi: botConfig.topicVi,
       role: botConfig.role
     };
+    this._topicContextSent = false;
 
     // Update Header UIs
     this.$.topicBadge.textContent = botConfig.topicEn;
@@ -869,76 +877,104 @@ class App {
   // ─── Protocol Actions ──────────────────────────
 
   async _ensureConnected(silent = false) {
-    if (this.protocol.isOpen) return true;
+    if (this.protocol.isOpen) {
+      if (this.protocol.lastServerActivityAt && Date.now() - this.protocol.lastServerActivityAt > 50000) {
+        console.warn('[App] Connection idle for >50s, proactively closing before use to prevent zombie state');
+        try { this.protocol.close(); } catch(e) {}
+        // Fall through to start a new connection
+      } else {
+        return true;
+      }
+    }
+    if (this._connectingPromise) return this._connectingPromise;
 
-    this.shouldReconnect = true;
-    this._setState(STATE.CONNECTING);
+    this._connectingPromise = (async () => {
+      this.shouldReconnect = true;
+      this._setState(STATE.CONNECTING);
 
-    if (!silent) this._addChatUI('system', 'Đang lấy cấu hình...');
-    try {
-      const otaData = await this.ota.fetchConfig();
-      this._updateDebugInfo();
+      if (!silent) this._addChatUI('system', 'Đang lấy cấu hình...');
+      try {
+        // On reconnect attempts >= 2, always refresh OTA config to get fresh token/URL
+        if (this.reconnectAttempts >= 2) {
+          console.log('[App] Reconnect attempt', this.reconnectAttempts, '— forcing OTA config refresh');
+        }
+        const otaData = await this.ota.fetchConfig();
+        this._updateDebugInfo();
 
-      // Check if the server requires activation (means unactivated MAC or revoked on xiaozhi.me)
-      if (otaData && otaData.activation) {
-        console.warn('[App] Device requires activation.');
-        if (!silent) this._addChatUI('system', '⚠️ Thiết bị này chưa được kích hoạt trên xiaozhi.me! Vui lòng báo Admin kích hoạt.');
-        this.currentDevice.setActivated(false);
+        // Check if the server requires activation (means unactivated MAC or revoked on xiaozhi.me)
+        if (otaData && otaData.activation) {
+          console.warn('[App] Device requires activation.');
+          if (!silent) this._addChatUI('system', '⚠️ Thiết bị này chưa được kích hoạt trên xiaozhi.me! Vui lòng báo Admin kích hoạt.');
+          this.currentDevice.setActivated(false);
+          this._setState(STATE.IDLE);
+          this.shouldReconnect = false;
+          
+          // Release the device from the pool so it is free for admin to activate
+          await this._releaseDevice(this.currentChatbotId, this.currentDevice.deviceId);
+
+          // Show error message on the main UI
+          this.$.activationView.classList.remove('hidden');
+          this.$.mainView.classList.add('hidden');
+          this.$.codeDisplay.textContent = '—';
+          this.$.activationStatus.textContent = '⚠️ Thiết bị pool chưa được kích hoạt. Vui lòng báo Admin kích hoạt thiết bị này trên xiaozhi.me.';
+          return false;
+        }
+      } catch (err) {
+        if (!silent) this._addChatUI('system', `Lỗi OTA: ${err.message}`);
+        // On reconnect, if OTA fails, still try with cached URL/token
+        if (silent && this.currentDevice.websocketUrl) {
+          console.warn('[App] OTA refresh failed during reconnect, trying cached config...');
+        }
+      }
+
+      const url = this.currentDevice.websocketUrl;
+      const token = this.currentDevice.websocketToken;
+
+      if (!url) {
+        if (!silent) this._addChatUI('system', '❌ Chưa có WebSocket URL. Vui lòng thử lại.');
         this._setState(STATE.IDLE);
-        this.shouldReconnect = false;
-        
-        // Release the device from the pool so it is free for admin to activate
-        await this._releaseDevice(this.currentChatbotId, this.currentDevice.deviceId);
-
-        // Show error message on the main UI
-        this.$.activationView.classList.remove('hidden');
-        this.$.mainView.classList.add('hidden');
-        this.$.codeDisplay.textContent = '—';
-        this.$.activationStatus.textContent = '⚠️ Thiết bị pool chưa được kích hoạt. Vui lòng báo Admin kích hoạt thiết bị này trên xiaozhi.me.';
         return false;
       }
-    } catch (err) {
-      if (!silent) this._addChatUI('system', `Lỗi OTA: ${err.message}`);
-    }
 
-    const url = this.currentDevice.websocketUrl;
-    const token = this.currentDevice.websocketToken;
+      let ok = false;
 
-    if (!url) {
-      if (!silent) this._addChatUI('system', '❌ Chưa có WebSocket URL. Vui lòng thử lại.');
+      if (WS_PROXY_URL) {
+        if (!silent) this._addChatUI('system', 'Kết nối qua proxy...');
+        ok = await this.protocol.connectViaProxy(
+          WS_PROXY_URL, url, token, this.currentDevice.deviceId, this.currentDevice.clientId
+        );
+      } else {
+        if (!silent) this._addChatUI('system', 'Kết nối trực tiếp (không có proxy)...');
+        ok = await this.protocol.connectDirect(url, token, this.currentDevice.deviceId, this.currentDevice.clientId);
+      }
+
+      if (!ok) {
+        if (!silent) this._addChatUI('system', '❌ Không kết nối được. Vui lòng thử lại.');
+        this._setState(STATE.IDLE);
+        return false;
+      }
+
+      if (!silent) this._addChatUI('system', '✅ Đã kết nối!');
       this._setState(STATE.IDLE);
-      return false;
+
+      // Send strict role-bound topic context to AI after connection
+      if (this.currentTopic && !this._topicContextSent) {
+        let topicContext = `SYSTEM INSTRUCTION: You are ${this.currentTopic.role} in this conversation. We are practicing English speaking about the topic "${this.currentTopic.en}" (${this.currentTopic.vi}). STRICT RULE: You MUST strictly stick to your role and this specific scenario. Do not discuss any other topics. If the user asks you anything unrelated or tries to change the subject, politely refuse and redirect them back to the English practice scenario for "${this.currentTopic.en}". Let's start the conversation naturally based on your role!`;
+        topicContext = topicContext.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+        
+        // Send directly via detect state
+        this.protocol.sendWakeWord(topicContext);
+        this._topicContextSent = true;
+      }
+
+      return true;
+    })();
+
+    try {
+      return await this._connectingPromise;
+    } finally {
+      this._connectingPromise = null;
     }
-
-    let ok = false;
-
-    if (WS_PROXY_URL) {
-      if (!silent) this._addChatUI('system', 'Kết nối qua proxy...');
-      ok = await this.protocol.connectViaProxy(
-        WS_PROXY_URL, url, token, this.currentDevice.deviceId, this.currentDevice.clientId
-      );
-    } else {
-      if (!silent) this._addChatUI('system', 'Kết nối trực tiếp (không có proxy)...');
-      ok = await this.protocol.connectDirect(url, token, this.currentDevice.deviceId, this.currentDevice.clientId);
-    }
-
-    if (!ok) {
-      if (!silent) this._addChatUI('system', '❌ Không kết nối được. Vui lòng thử lại.');
-      this._setState(STATE.IDLE);
-      return false;
-    }
-
-    if (!silent) this._addChatUI('system', '✅ Đã kết nối!');
-    this._setState(STATE.IDLE);
-
-    // Send strict role-bound topic context to AI after connection
-    if (this.currentTopic) {
-      let topicContext = `SYSTEM INSTRUCTION: You are ${this.currentTopic.role} in this conversation. We are practicing English speaking about the topic "${this.currentTopic.en}" (${this.currentTopic.vi}). STRICT RULE: You MUST strictly stick to your role and this specific scenario. Do not discuss any other topics. If the user asks you anything unrelated or tries to change the subject, politely refuse and redirect them back to the English practice scenario for "${this.currentTopic.en}". Let's start the conversation naturally based on your role!`;
-      topicContext = topicContext.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
-      this.protocol.sendWakeWord(topicContext);
-    }
-
-    return true;
   }
 
   async _startManualListening() {
@@ -990,12 +1026,9 @@ class App {
     
     this._addChat('user', cleanText);
     
-    // Simulate a complete speech manual turn to trigger the backend's LLM state machine
-    this.protocol.startListening('manual'); // Sends { type: 'listen', state: 'start', mode: 'manual' }
-    await new Promise(resolve => setTimeout(resolve, 50));
-    this.protocol.sendWakeWord(cleanText);  // Sends { type: 'listen', state: 'detect', text: cleanText }
-    await new Promise(resolve => setTimeout(resolve, 50));
-    this.protocol.stopListening();          // Sends { type: 'listen', state: 'stop' }
+    // Send text directly via detect state. 
+    // Do NOT send start/stop as it triggers the backend's audio transcription which would overwrite our text with silence.
+    this.protocol.sendWakeWord(cleanText);
     
     this.$.textInput.value = '';
   }
@@ -1038,11 +1071,17 @@ class App {
         ? 3000 * Math.pow(2, this.reconnectAttempts - 1)
         : 15000;
       
-      console.log(`[App] Scheduling auto-reconnect in ${delay / 1000}s (Attempt ${this.reconnectAttempts})`);
-      
       if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+      
+      // Pause reconnect attempts while offline
+      if (this._isOffline) {
+        console.log(`[App] Offline: Pausing auto-reconnect (Attempt ${this.reconnectAttempts})`);
+        return;
+      }
+      
+      console.log(`[App] Scheduling auto-reconnect in ${delay / 1000}s (Attempt ${this.reconnectAttempts})`);
       this.reconnectTimeout = setTimeout(() => {
-        if (this.shouldReconnect && !this.protocol.isOpen) {
+        if (this.shouldReconnect && !this.protocol.isOpen && !this._isOffline) {
           this._ensureConnected(true);
         }
       }, delay);
@@ -1050,12 +1089,14 @@ class App {
   }
 
   _startHeartbeat() {
-    // Native WebSocket handles ping-pong automatically at the protocol layer.
-    // Application-level JSON pings are not supported by Tenclass backend and cause disconnections.
-    this._stopHeartbeat();
+    // Start keepalive ping/pong via the protocol layer.
+    // Sends binary 0x00 every 25s to Cloudflare Worker, which responds with 0x01 pong.
+    // Also monitors connection health — auto-closes if no activity for 65s.
+    this.protocol.startKeepAlive();
   }
 
   _stopHeartbeat() {
+    this.protocol.stopKeepAlive();
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
@@ -1089,6 +1130,11 @@ class App {
   _showSuggestionPlaceholder() {
     this.$.inlineSuggestionContainer.classList.add('hidden');
     this.$.inlineSuggestionContent.innerHTML = '';
+    if (this.$.mobileSuggestionChips) {
+      this.$.mobileSuggestionChips.classList.add('hidden');
+      const mobileChipsWrapper = document.getElementById('mobile-chips-wrapper');
+      if (mobileChipsWrapper) mobileChipsWrapper.innerHTML = '';
+    }
   }
 
   async _fetchSuggestions() {
@@ -1103,6 +1149,14 @@ class App {
     this.$.inlineSuggestionContent.classList.remove('hidden');
     this.$.reloadSuggestionBtn.classList.add('hidden');
     this.$.toggleSuggestionBtn.textContent = '🔼';
+
+    if (this.$.mobileSuggestionChips) {
+      this.$.mobileSuggestionChips.classList.remove('hidden');
+      const mobileChipsWrapper = document.getElementById('mobile-chips-wrapper');
+      if (mobileChipsWrapper) {
+        mobileChipsWrapper.innerHTML = `<span style="color: var(--text-dim); font-size: 0.8rem; padding: 6px 16px;">Đang tải gợi ý...</span>`;
+      }
+    }
 
     // Map conversation history
     const messages = history
@@ -1147,13 +1201,13 @@ class App {
       const data = await response.json();
       
       if (data && data.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
-        // Shuffle or pick random if reloading? Actually backend gives 3, let's pick a random one so reload gives different
+        // Desktop random selection
         const randomSug = data.suggestions[Math.floor(Math.random() * data.suggestions.length)];
         
         this.$.inlineSuggestionContainer.classList.remove('hidden');
         
         const safeEn = randomSug.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        this.$.inlineSuggestionContent.innerHTML = `<span>${randomSug.en}</span> <br/> <span style="color: var(--text-dim); font-size: 0.9em;">- ${randomSug.vi}</span>`;
+        this.$.inlineSuggestionContent.innerHTML = `<span style="cursor: pointer;" onclick="window.appInstance.fillTextInput('${safeEn}')">${randomSug.en}</span> <br/> <span style="color: var(--text-dim); font-size: 0.9em;">- ${randomSug.vi}</span>`;
         // Restore visibility state
         const isHidden = localStorage.getItem('suggestionHidden') === 'true';
         if (isHidden) {
@@ -1164,6 +1218,31 @@ class App {
           this.$.inlineSuggestionContent.classList.remove('hidden');
           this.$.reloadSuggestionBtn.classList.remove('hidden');
           this.$.toggleSuggestionBtn.textContent = '🔼';
+        }
+
+        // Scroll chat log to bottom to account for the new padding
+        setTimeout(() => {
+          this.$.chatLog.scrollTop = this.$.chatLog.scrollHeight;
+        }, 50);
+        setTimeout(() => {
+          this.$.chatLog.scrollTop = this.$.chatLog.scrollHeight;
+        }, 300); // Trigger again after transition completes
+
+        // Mobile list rendering
+        if (this.$.mobileSuggestionChips) {
+          this.$.mobileSuggestionChips.classList.remove('hidden');
+          const mobileChipsWrapper = document.getElementById('mobile-chips-wrapper');
+          if (mobileChipsWrapper) {
+            mobileChipsWrapper.innerHTML = data.suggestions.map(sug => {
+              const chipSafeEn = sug.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+              return `
+                <div class="suggestion-chip" onclick="window.appInstance.fillTextInput('${chipSafeEn}')">
+                  <span class="chip-en">${sug.en}</span>
+                  <span class="chip-vi">${sug.vi}</span>
+                </div>
+              `;
+            }).join('');
+          }
         }
       } else {
         throw new Error("Dữ liệu gợi ý không đúng định dạng");
@@ -1179,11 +1258,12 @@ class App {
     const sugs = FALLBACK_SUGGESTIONS[chatbotId] || [];
     
     if (sugs.length > 0) {
+      // Desktop
       this.$.inlineSuggestionContainer.classList.remove('hidden');
       const randomSug = sugs[Math.floor(Math.random() * sugs.length)];
       const safeEn = randomSug.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
       
-      this.$.inlineSuggestionContent.innerHTML = `<span style="color: #f87171;" title="Lỗi API, dùng Offline">⚠️</span> <span>${randomSug.en}</span> <br/> <span style="color: var(--text-dim); font-size: 0.9em;">- ${randomSug.vi}</span>`;
+      this.$.inlineSuggestionContent.innerHTML = `<span style="color: #f87171;" title="Lỗi API, dùng Offline">⚠️</span> <span style="cursor: pointer;" onclick="window.appInstance.fillTextInput('${safeEn}')">${randomSug.en}</span> <br/> <span style="color: var(--text-dim); font-size: 0.9em;">- ${randomSug.vi}</span>`;
       // Restore visibility state
       const isHidden = localStorage.getItem('suggestionHidden') === 'true';
       if (isHidden) {
@@ -1195,8 +1275,37 @@ class App {
         this.$.reloadSuggestionBtn.classList.remove('hidden');
         this.$.toggleSuggestionBtn.textContent = '🔼';
       }
+
+      // Scroll chat log to bottom to account for the new padding
+      setTimeout(() => {
+        this.$.chatLog.scrollTop = this.$.chatLog.scrollHeight;
+      }, 50);
+      setTimeout(() => {
+        this.$.chatLog.scrollTop = this.$.chatLog.scrollHeight;
+      }, 300);
+
+      // Mobile
+      if (this.$.mobileSuggestionChips) {
+        this.$.mobileSuggestionChips.classList.remove('hidden');
+        const mobileChipsWrapper = document.getElementById('mobile-chips-wrapper');
+        if (mobileChipsWrapper) {
+          const selectedSugs = sugs.slice(0, 4);
+          mobileChipsWrapper.innerHTML = selectedSugs.map(sug => {
+            const chipSafeEn = sug.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            return `
+              <div class="suggestion-chip" onclick="window.appInstance.fillTextInput('${chipSafeEn}')">
+                <span class="chip-en"><span style="color: #f87171;">⚠️</span> ${sug.en}</span>
+                <span class="chip-vi">${sug.vi}</span>
+              </div>
+            `;
+          }).join('');
+        }
+      }
     } else {
       this.$.inlineSuggestionContainer.classList.add('hidden');
+      if (this.$.mobileSuggestionChips) {
+        this.$.mobileSuggestionChips.classList.add('hidden');
+      }
     }
   }
 
@@ -1260,10 +1369,10 @@ class App {
         let innerHTML = `<span class="chat-label">${label}:</span> <span class="chat-text">${text}</span>`;
         if (role === 'ai') {
            const safeText = text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-           innerHTML += `<div class="chat-actions" style="margin-top: 6px; text-align: right;">
-               <button class="btn-translate-inline" onclick="window.appInstance.translateInline(this, '${safeText}')" style="background: transparent; border: none; font-size: 0.85rem; color: #a5b4fc; cursor: pointer; padding: 0; opacity: 0.8;">Dịch sang tiếng Việt</button>
+           innerHTML += `<div class="chat-actions">
+               <button class="btn-translate-inline" onclick="window.appInstance.translateInline(this, '${safeText}')">Dịch sang tiếng Việt</button>
            </div>
-           <div class="chat-translation hidden" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.2); font-size: 0.95rem; color: #e2e8f0; font-style: italic;"></div>`;
+           <div class="chat-translation hidden"></div>`;
         }
         child.innerHTML = innerHTML;
         
@@ -1417,6 +1526,29 @@ class App {
       }
     });
 
+    // Network online/offline detection for instant reconnect
+    window.addEventListener('offline', () => {
+      this._isOffline = true;
+      console.warn('[App] Network offline detected');
+      this._addChatUI('system', '📡 Mất kết nối mạng. Đang chờ mạng khôi phục...');
+      // Pause reconnect attempts while offline
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = null;
+      }
+    });
+
+    window.addEventListener('online', () => {
+      this._isOffline = false;
+      console.log('[App] Network online restored');
+      this._addChatUI('system', '📡 Đã có mạng trở lại. Đang kết nối lại...');
+      // Immediately attempt reconnect
+      if (this.shouldReconnect && !this.protocol.isOpen) {
+        this.reconnectAttempts = 0; // Reset attempts for fresh start
+        setTimeout(() => this._ensureConnected(true), 500);
+      }
+    });
+
     // Chatbot card selection
     this.$.chatbotList.addEventListener('click', (e) => {
       const card = e.target.closest('.chatbot-card');
@@ -1458,6 +1590,14 @@ class App {
         this.$.toggleSuggestionBtn.textContent = '🔽';
         localStorage.setItem('suggestionHidden', 'true');
       }
+      
+      // Scroll chat log to bottom to account for padding transitions
+      setTimeout(() => {
+        this.$.chatLog.scrollTop = this.$.chatLog.scrollHeight;
+      }, 50);
+      setTimeout(() => {
+        this.$.chatLog.scrollTop = this.$.chatLog.scrollHeight;
+      }, 300);
     });
 
     this.$.closeSuggestionBtn?.addEventListener('click', () => {
@@ -1759,6 +1899,12 @@ class App {
         if (this.$.userProfileBadge) {
           this.$.userProfileBadge.classList.remove('hidden');
           this.$.profileUsername.textContent = this.currentUser.displayName || this.currentUser.username;
+          if (this.$.mobileProfileUsername) {
+            this.$.mobileProfileUsername.textContent = this.currentUser.displayName || this.currentUser.username;
+          }
+          if (this.$.mobileProfileBadge) {
+            this.$.mobileProfileBadge.classList.remove('hidden');
+          }
           this._updateProfileBadgeUI();
         }
         
@@ -1802,6 +1948,7 @@ class App {
       // Hide Login overlay by default on Landing Page
       if (this.$.loginOverlay) this.$.loginOverlay.classList.add('hidden');
       if (this.$.userProfileBadge) this.$.userProfileBadge.classList.add('hidden');
+      if (this.$.mobileProfileBadge) this.$.mobileProfileBadge.classList.add('hidden');
       if (this.$.logoutBtn) this.$.logoutBtn.classList.add('hidden');
       if (this.$.adminDashboardBtn) this.$.adminDashboardBtn.classList.add('hidden');
       
@@ -2114,6 +2261,19 @@ class App {
       percent = Math.min(100, Math.max(0, (progress / range) * 100));
     }
     this.$.profileProgress.style.width = `${percent}%`;
+
+    if (this.$.mobileProfileUsername) {
+      this.$.mobileProfileUsername.textContent = this.currentUser.displayName || this.currentUser.username;
+    }
+    if (this.$.mobileProfileRank) {
+      this.$.mobileProfileRank.textContent = `${rank.icon} ${rank.name}`;
+    }
+    if (this.$.mobileProfileScore) {
+      this.$.mobileProfileScore.textContent = `${this.currentUser.score} pts / ${this.currentUser.chatCount} chats`;
+    }
+    if (this.$.mobileProfileProgress) {
+      this.$.mobileProfileProgress.style.width = `${percent}%`;
+    }
   }
 
   // Toggle talk mode

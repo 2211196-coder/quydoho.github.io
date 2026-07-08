@@ -495,6 +495,16 @@ body.theme-shopping.light-theme {
   max-width: 80%;
   backdrop-filter: blur(8px);
 }
+
+/* Prevent inline suggestion box from overlapping the latest chat messages on desktop/tablet */
+#main-view:has(.inline-suggestion-container:not(.hidden)) .chat-log {
+  padding-bottom: 90px;
+  transition: padding 0.3s ease;
+}
+
+#main-view:has(.inline-suggestion-container:not(.hidden)):has(.inline-suggestion-content.hidden) .chat-log {
+  padding-bottom: 45px;
+}
 .inline-suggestion-header {
   display: flex;
   align-items: flex-start;
@@ -525,6 +535,84 @@ body.theme-shopping.light-theme {
 
 body.light-theme .suggestion-item {
   background: rgba(255, 255, 255, 0.5);
+}
+
+/* Mobile Suggestion Chips (Horizontal Scroll, Premium styling) */
+.mobile-suggestion-chips {
+  padding: 6px 16px 2px;
+  background: transparent;
+  flex-shrink: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.mobile-suggestion-chips.hidden {
+  display: none !important;
+}
+
+.chips-scroll-wrapper {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.chips-scroll-wrapper::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.suggestion-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border-highlight);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  max-width: 280px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  user-select: none;
+}
+
+.suggestion-chip:active {
+  transform: scale(0.97);
+  background: rgba(139, 92, 246, 0.25);
+  border-color: var(--accent);
+}
+
+.chip-en {
+  font-size: 0.85rem;
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.chip-vi {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+  text-align: left;
+}
+
+body.light-theme .suggestion-chip {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .suggestion-chip:active {
+  background: rgba(139, 92, 246, 0.15);
 }
 
 .suggestion-header {
@@ -862,8 +950,9 @@ body.light-theme .btn-translate-inline:hover {
 }
 
 body.light-theme .chat-translation {
-  border-top: 1px dashed rgba(0, 0, 0, 0.1);
-  color: #475569;
+  border-top: 1px dashed rgba(0, 0, 0, 0.15);
+  color: #1e293b;
+  font-weight: 500;
 }
 
 /* ─── Text Input ─────────────────────────── */
@@ -1118,8 +1207,20 @@ body.light-theme .chat-translation {
 /* ─── Responsive ─────────────────────────── */
 
 .hidden-desktop { display: none !important; }
+.mobile-only { display: none !important; }
+.hidden-mobile { }
 
 @media (max-width: 900px) {
+  .hidden-mobile { display: none !important; }
+  .mobile-suggestion-chips.hidden-desktop { display: flex !important; }
+  #main-view:has(.inline-suggestion-container:not(.hidden)) .chat-log {
+    padding-bottom: 12px;
+  }
+  /* Hide the global floating brand panel when inside the app (meaning landing-view is hidden) */
+  body:has(#landing-view.hidden) .global-brand-panel {
+    display: none !important;
+  }
+
   .global-brand-panel {
     top: 18px;
     left: 48px; /* Room for hamburger menu */
@@ -1127,6 +1228,47 @@ body.light-theme .chat-translation {
   .global-brand-panel h1 {
     font-size: 1.1rem;
   }
+
+  /* Hide the desktop user profile badge in the header on mobile to prevent wrapping/overlap */
+  .header-info-row .user-profile-badge {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: flex !important;
+  }
+
+  .mobile-brand-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    white-space: nowrap;
+    margin-left: 4px;
+  }
+
+  #mobile-menu-btn {
+    width: 44px;
+    height: 44px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    padding: 0;
+    color: var(--text);
+  }
+
+  .header {
+    padding: 8px 16px;
+    justify-content: space-between;
+    height: 60px;
+    align-items: center;
+  }
+
   .app-layout {
     display: flex;
     flex-direction: column;
@@ -1543,9 +1685,14 @@ body.light-theme .status-text {
 /* Chat AI Bubbles in Light Mode */
 body.light-theme .chat-ai {
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-  color: #1f2937;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+
+body.light-theme .chat-label {
+  opacity: 0.85;
+  color: #334155;
 }
 
 body.light-theme .chat-system {

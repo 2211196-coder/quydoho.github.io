@@ -20,6 +20,19 @@
 
   <!-- Global floating control panel -->
   <div id="global-control-panel" class="global-control-panel">
+    <!-- User Profile Section for Mobile -->
+    <div id="mobile-profile-badge" class="user-profile-badge mobile-only hidden" style="align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; width: 100%;">
+      <div class="user-profile-row" style="display: flex; align-items: center; gap: 8px;">
+        <span class="user-name" id="mobile-profile-username" style="font-size: 1.1rem; color: var(--text);">User</span>
+        <span class="user-badge" id="mobile-profile-rank" style="font-size: 0.75rem; background: var(--accent); padding: 1px 6px; border-radius: 4px; color: white;">Bronze</span>
+      </div>
+      <div class="user-profile-row" style="display: flex; align-items: center; gap: 8px; margin-top: 6px; width: 100%;">
+        <span class="user-points" id="mobile-profile-score" style="font-size: 0.75rem; color: var(--text-dim); white-space: nowrap;">0 pts</span>
+        <div class="user-progress-bar-container" title="Tiến trình lên cấp kế tiếp" style="flex: 1; max-width: 120px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 0;">
+          <div class="user-progress-bar" id="mobile-profile-progress" style="width: 0%; height: 100%; background: var(--accent);"></div>
+        </div>
+      </div>
+    </div>
     <button id="drawer-trans-btn" class="global-btn hidden-desktop" title="Dịch thuật">
       <span class="btn-icon">🔄</span>
       <span class="btn-label">Dịch thuật</span>
@@ -160,8 +173,9 @@
     <div id="app" class="main-column">
 
         <header class="header">
-          <div class="header-left">
+          <div class="header-left" style="display: flex; align-items: center; gap: 8px;">
             <button id="mobile-menu-btn" class="btn-icon-only hidden-desktop" title="Danh sách Chatbot">☰</button>
+            <span class="mobile-brand-title hidden-desktop">✨ Blubla Speakup</span>
           </div>
           <div class="header-right">
             <div class="header-info-row">
@@ -261,10 +275,15 @@
         <!-- Chat Log -->
         <div id="chat-log" class="chat-log"></div>
 
+        <!-- Mobile Suggestion Chips (Horizontal Scroll, overlap-free) -->
+        <div id="mobile-suggestion-chips" class="mobile-suggestion-chips hidden-desktop hidden">
+          <div class="chips-scroll-wrapper" id="mobile-chips-wrapper"></div>
+        </div>
+
         <!-- Text Input -->
         <div class="input-row">
           <!-- Inline Suggestion (Floating above right) -->
-          <div id="inline-suggestion-container" class="inline-suggestion-container hidden">
+          <div id="inline-suggestion-container" class="inline-suggestion-container hidden-mobile hidden">
             <div class="inline-suggestion-header">
               <span class="suggestion-badge">💡 Gợi ý:</span>
               <div style="display: flex; gap: 4px;">

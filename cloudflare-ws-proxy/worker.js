@@ -83,9 +83,18 @@ export default {
         try { serverWs.close(1011, 'upstream error'); } catch {}
       });
 
-      // Pipe: browser → upstream
+      // Pipe: browser → upstream (with keepalive interception)
       serverWs.addEventListener('message', (event) => {
         try {
+          // Intercept keepalive ping: 1-byte binary 0x00
+          if (event.data instanceof ArrayBuffer && event.data.byteLength === 1) {
+            const byte = new Uint8Array(event.data)[0];
+            if (byte === 0x00) {
+              // Respond with pong (0x01) immediately, don't forward to upstream
+              try { serverWs.send(new Uint8Array([0x01]).buffer); } catch {}
+              return;
+            }
+          }
           upstream.send(event.data);
         } catch (e) {
           console.error('client→upstream error:', e);
